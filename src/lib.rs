@@ -1,3 +1,7 @@
+mod token;
+mod token_type;
+mod scanner;
+
 use std::io::{self, Write};
 
 static mut HAD_ERROR: bool = false;
