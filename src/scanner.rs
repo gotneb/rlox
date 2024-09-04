@@ -71,10 +71,52 @@ impl Scanner {
                 let is_matched = self.match_next_token('=');
                 self.add_token(if is_matched { TokenType::GreaterEqual } else { TokenType::Greater }, Literal::None)
             },
+            // Special case
+            '/' => {
+                if self.match_next_token('/') {
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::Slash, Literal::None)
+                }
+            }
+            // Meaningless lexemes... skip
+            ' ' | '\r' | '\t' => {},
+            '\n' => self.line += 1,
             _ => {
-                error(self.line, "Unexpected character.");
+                // Detecting numbers is a litle more complex, we can check them
+                // in the not matched branch, because in all above cases is more easy to
+                // verify other cases instead of numbers
+                if self.is_digit(c) {
+                    self.number()
+                } else {
+                    error(self.line, "Unexpected character.");
+                }
             },
         }
+    }
+
+    fn number(&mut self) {
+        while self.is_digit(self.peek()) {
+            self.advance();
+        }
+
+        // Look for fractional part
+        if self.peek() == '.' && self.is_digit(self.peek_next()) {
+            self.advance();
+
+            while self.is_digit(self.peek()) {
+                self.advance();
+            }
+        }
+
+        let value: f64 = self.source
+                            .get(self.start..self.current)
+                            .unwrap()
+                            .parse()
+                            .unwrap();
+        self.add_token(TokenType::Number, Literal::Number(value))
     }
 
     fn add_token(&mut self, token_type: TokenType, literal: Literal) {
@@ -85,7 +127,7 @@ impl Scanner {
             .push(Token::new(token_type, text, literal, self.line));
     }
 
-    fn is_at_end(&mut self) -> bool {
+    fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
 
@@ -106,5 +148,46 @@ impl Scanner {
 
         self.current += 1;
         true
+    }
+
+    fn peek(&self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+        self.source.as_bytes()[self.current] as char
+    }
+
+    fn peek_next(&self) -> char {
+        if self.current + 1 >= self.source.len() {
+            return '\0'
+        }
+        self.source.as_bytes()[self.current + 1] as char
+    }
+
+    fn is_digit(&self, c: char) -> bool {
+        return c >= '0' && c <= '9'
+    }
+
+    fn string(&mut self) {
+        if self.peek() != '"' && !self.is_at_end() {
+            // Lox has support for multi-string
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+
+        if self.is_at_end() {
+            return error(self.line, "Unterminated string");
+        }
+
+        // The closing ".
+        self.advance();
+
+        // Trim surrounding quotes
+        let value = self.source[self.start+1..self.current-1]
+                            .to_string();
+        self.add_token(TokenType::String, Literal::String(value));
+
     }
 }
