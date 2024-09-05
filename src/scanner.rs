@@ -242,3 +242,115 @@ impl Scanner {
         hash
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn punctuators() {
+        let mut scanner = Scanner::new("(){};,+-*!===<=>=!=<>/.".into());
+        let tokens = scanner.scan_tokens();
+
+        let expected = vec![
+            Token::new(TokenType::LeftParen, "(".into(), Literal::None, 1),
+            Token::new(TokenType::RightParen, ")".into(), Literal::None, 1),
+            Token::new(TokenType::LeftBrace, "{".into(), Literal::None, 1),
+            Token::new(TokenType::RightBrace, "}".into(), Literal::None, 1),
+            Token::new(TokenType::Semicolon, ";".into(), Literal::None, 1),
+            Token::new(TokenType::Comma, ",".into(), Literal::None, 1),
+            Token::new(TokenType::Plus, "+".into(), Literal::None, 1),
+            Token::new(TokenType::Minus, "-".into(), Literal::None, 1),
+            Token::new(TokenType::Star, "*".into(), Literal::None, 1),
+            Token::new(TokenType::BangEqual, "!=".into(), Literal::None, 1),
+            Token::new(TokenType::EqualEqual, "==".into(), Literal::None, 1),
+            Token::new(TokenType::LessEqual, "<=".into(), Literal::None, 1),
+            Token::new(TokenType::GreaterEqual, ">=".into(), Literal::None, 1),
+            Token::new(TokenType::BangEqual, "!=".into(), Literal::None, 1),
+            Token::new(TokenType::Less, "<".into(), Literal::None, 1),
+            Token::new(TokenType::Greater, ">".into(), Literal::None, 1),
+            Token::new(TokenType::Slash, "/".into(), Literal::None, 1),
+            Token::new(TokenType::Dot, ".".into(), Literal::None, 1),
+            Token::new(TokenType::Eof, "".into(), Literal::None, 1),
+        ];
+
+        assert_eq!(tokens.len(), expected.len());
+        for (index, token) in expected.iter().enumerate() {
+            assert_eq!(*token, expected[index]);
+        }
+    }
+
+    #[test]
+    fn numbers() {
+        let mut scanner = Scanner::new("3.14159\n299792458\n2.71828\n123.\n.123".into());
+        let tokens = scanner.scan_tokens();
+
+        let expected = vec![
+            Token::new(TokenType::Number, "3.14159".into(), Literal::Number(3.14159), 1),
+            Token::new(TokenType::Number, "299792458".into(), Literal::Number(299792458.), 2),
+            Token::new(TokenType::Number, "2.71828".into(), Literal::Number(2.71828), 3),
+            Token::new(TokenType::Number, "123".into(), Literal::Number(123.0), 4),
+            Token::new(TokenType::Dot, ".".into(), Literal::None, 4),
+            Token::new(TokenType::Dot, ".".into(), Literal::None, 5),
+            Token::new(TokenType::Dot, "123".into(), Literal::None, 5),
+            Token::new(TokenType::Eof, "".into(), Literal::None, 6),
+        ];
+
+        assert_eq!(tokens.len(), expected.len());
+        for (index, token) in expected.iter().enumerate() {
+            assert_eq!(*token, expected[index]);
+        }
+    }
+
+    #[test]
+    fn keywords() {
+        let mut scanner = Scanner::new("and class else false for if nil or print return super this true var while".into());
+
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = vec![
+            Token::new(TokenType::And, "and".into(), Literal::None, 1),
+            Token::new(TokenType::Class, "class".into(), Literal::None, 1),
+            Token::new(TokenType::Else, "else".into(), Literal::None, 1),
+            Token::new(TokenType::False, "false".into(), Literal::None, 1),
+            Token::new(TokenType::For, "for".into(), Literal::None, 1),
+            Token::new(TokenType::If, "if".into(), Literal::None, 1),
+            Token::new(TokenType::Nil, "nil".into(), Literal::None, 1),
+            Token::new(TokenType::Or, "or".into(), Literal::None, 1),
+            Token::new(TokenType::Print, "print".into(), Literal::None, 1),
+            Token::new(TokenType::Return, "return".into(), Literal::None, 1),
+            Token::new(TokenType::Super, "super".into(), Literal::None, 1),
+            Token::new(TokenType::This, "this".into(), Literal::None, 1),
+            Token::new(TokenType::True, "true".into(), Literal::None, 1),
+            Token::new(TokenType::Var, "var".into(), Literal::None, 1),
+            Token::new(TokenType::While, "while".into(), Literal::None, 1),
+            Token::new(TokenType::Eof, "".into(), Literal::None, 1),
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (index, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[index]);
+        }
+    }
+
+    fn whistespaces() {
+        let mut scanner = Scanner::new("var
+        // Yes, this variable is longer on purpose :)
+        data_do_ano_do_descorimento_do_brasil             =
+        1500
+        ;
+        ".into());
+
+        let tokens = scanner.scan_tokens();
+
+        let expected = vec![
+            Token::new(TokenType::Var, "var".into(), Literal::None, 1),
+            Token::new(TokenType::Slash, "//".into(), Literal::None, 2),
+            Token::new(TokenType::Identifier, "data_do_ano_do_descorimento_do_brasil".into(), Literal::None, 3),
+            Token::new(TokenType::Equal, "=".into(), Literal::None, 3),
+            Token::new(TokenType::Number, "1500".into(), Literal::Number(1500.0), 4),
+            Token::new(TokenType::Semicolon, ";".into(), Literal::None, 5),
+            Token::new(TokenType::Eof, "".into(), Literal::None, 1),
+        ];
+    }
+}
