@@ -1,6 +1,8 @@
 mod token;
 mod token_type;
 mod scanner;
+mod expr;
+pub mod ast_printer;
 
 use std::io::{self, Write};
 
