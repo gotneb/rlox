@@ -2,9 +2,13 @@ mod token;
 mod token_type;
 mod scanner;
 mod expr;
+mod parser;
 pub mod ast_printer;
 
 use std::io::{self, Write};
+
+use token::Token;
+use token_type::TokenType;
 
 static mut HAD_ERROR: bool = false;
 
@@ -19,6 +23,18 @@ pub fn report(line: usize, location: &str, message: &str) {
     eprintln!("[Line {}] Error {}: {}", line, location, message);
     // Aww men... Here goes unsafe :( Is there another way to make this?
     unsafe { HAD_ERROR = true };
+}
+
+pub fn print_error(token: &Token, msg: &str) {
+    if token.token_type == TokenType::Eof {
+        report(token.line, " at end", msg);
+    } else {
+        report(
+            token.line, 
+            format!(" at '{}'", token.lexeme).as_str(), 
+            msg
+        );
+    }
 }
 
 pub fn run_file(path: &str) {}
