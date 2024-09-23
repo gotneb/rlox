@@ -1,4 +1,9 @@
-use crate::{expr::Expr, print_error, token::{Literal, Token}, token_type::TokenType};
+use crate::{
+    expr::Expr,
+    print_error,
+    token::{Literal, Token},
+    token_type::TokenType,
+};
 
 struct ParserError;
 
@@ -11,88 +16,119 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self {
-            tokens,
-            current: 0,
-        }
+        Self { tokens, current: 0 }
     }
 
-    fn expression(&mut self) -> Expr {
+    fn expression(&mut self) -> Result<Expr> {
         self.equality()
     }
 
-    fn equality(&mut self) -> Expr {
+    fn equality(&mut self) -> Result<Expr> {
         let mut expr = self.comparison();
         while self.match_token(vec![TokenType::BangEqual, TokenType::EqualEqual]) {
             let operator = self.previous();
             let right = self.comparison();
-            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) }
+            expr = Ok(Expr::Binary {
+                left: Box::new(expr?),
+                operator,
+                right: Box::new(right?),
+            })
         }
         expr
     }
 
-    fn comparison(&mut self) -> Expr {
+    fn comparison(&mut self) -> Result<Expr> {
         let mut expr = self.term();
-        while self.match_token(vec![TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual]) {
+        while self.match_token(vec![
+            TokenType::Greater,
+            TokenType::GreaterEqual,
+            TokenType::Less,
+            TokenType::LessEqual,
+        ]) {
             let operator = self.previous();
             let right = self.term();
-            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) };
+            expr = Ok(Expr::Binary {
+                left: Box::new(expr?),
+                operator,
+                right: Box::new(right?),
+            });
         }
         expr
     }
 
-    fn term(&mut self) -> Expr {
+    fn term(&mut self) -> Result<Expr> {
         let mut expr = self.factor();
         while self.match_token(vec![TokenType::Plus, TokenType::Minus]) {
             let operator = self.previous();
             let right = self.factor();
-            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) };
+            expr = Ok(Expr::Binary {
+                left: Box::new(expr?),
+                operator,
+                right: Box::new(right?),
+            });
         }
         expr
     }
 
-    fn factor(&mut self) -> Expr {
+    fn factor(&mut self) -> Result<Expr> {
         let mut expr = self.unary();
         while self.match_token(vec![TokenType::Slash, TokenType::Star]) {
             let operator = self.previous();
             let right = self.unary();
-            expr = Expr::Binary { left: Box::new(expr), operator, right: Box::new(right) };
+            expr = Ok(Expr::Binary {
+                left: Box::new(expr?),
+                operator,
+                right: Box::new(right?),
+            });
         }
         expr
     }
 
-    fn unary(&mut self) -> Expr {
+    fn unary(&mut self) -> Result<Expr> {
         if self.match_token(vec![TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
-            let right = self.unary();
-            return Expr::Unary { operator, right: Box::new(right) }
+            let right = self.unary()?;
+            return Ok(Expr::Unary {
+                operator,
+                right: Box::new(right),
+            });
         }
 
         self.primary()
     }
 
-    fn primary(&mut self) -> Expr {
+    fn primary(&mut self) -> Result<Expr> {
         if self.match_token(vec![TokenType::False]) {
-            return Expr::Literal { value: Literal::Bool(false) }
+            return Ok(Expr::Literal {
+                value: Literal::Bool(false),
+            });
         }
         if self.match_token(vec![TokenType::True]) {
-            return Expr::Literal { value: Literal::Bool(true) }
+            return Ok(Expr::Literal {
+                value: Literal::Bool(true),
+            });
         }
         if self.match_token(vec![TokenType::Nil]) {
-            return Expr::Literal { value: Literal::None }
+            return Ok(Expr::Literal {
+                value: Literal::None,
+            });
         }
 
         if self.match_token(vec![TokenType::Number, TokenType::String]) {
-            return Expr::Literal { value: self.previous().literal }
+            return Ok(Expr::Literal {
+                value: self.previous().literal,
+            });
         }
 
         if self.match_token(vec![TokenType::LeftParen]) {
             let expr = self.expression();
-            self.consume(TokenType::RightParen, "Expect ')' after expression.");
-            return Expr::Grouping { expression: Box::new(expr) }
+            self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
+            return Ok(Expr::Grouping {
+                expression: Box::new(expr?),
+            });
         }
 
-        todo!()
+        Err(self.error(self.peek(), "Expected expression"))
     }
 
     // REFACTOR: Prefer using ´slice´ over ´Vec´. It less verbose...
@@ -100,7 +136,7 @@ impl Parser {
         for token in tokens {
             if self.check(token) {
                 self.advance();
-                return true
+                return true;
             }
         }
         false
@@ -108,15 +144,14 @@ impl Parser {
 
     fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<Token> {
         if self.check(token_type) {
-            return Ok(self.advance())
-        } 
+            return Ok(self.advance());
+        }
         Err(self.error(self.peek(), msg))
     }
 
-
     fn check(&self, token_type: TokenType) -> bool {
         if self.is_at_the_end() {
-            return false
+            return false;
         }
         self.peek().token_type == token_type
     }
@@ -125,7 +160,7 @@ impl Parser {
         if !self.is_at_the_end() {
             self.current += 1;
         }
-        return self.previous()
+        return self.previous();
     }
 
     fn peek(&self) -> Token {
@@ -142,6 +177,6 @@ impl Parser {
 
     fn error(&self, token: Token, msg: &str) -> ParserError {
         print_error(&token, msg);
-        ParserError{}
+        ParserError {}
     }
 }
