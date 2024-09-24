@@ -19,6 +19,10 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
+    pub fn parse(&mut self) -> Result<Expr> {
+        self.expression()
+    }
+
     fn expression(&mut self) -> Result<Expr> {
         self.equality()
     }
@@ -150,14 +154,14 @@ impl Parser {
     }
 
     fn check(&self, token_type: TokenType) -> bool {
-        if self.is_at_the_end() {
+        if self.is_at_end() {
             return false;
         }
         self.peek().token_type == token_type
     }
 
     fn advance(&mut self) -> Token {
-        if !self.is_at_the_end() {
+        if !self.is_at_end() {
             self.current += 1;
         }
         return self.previous();
@@ -171,12 +175,36 @@ impl Parser {
         self.tokens.get(self.current - 1).unwrap().clone()
     }
 
-    fn is_at_the_end(&self) -> bool {
+    fn is_at_end(&self) -> bool {
         self.peek().token_type == TokenType::Eof
     }
 
     fn error(&self, token: Token, msg: &str) -> ParserError {
         print_error(&token, msg);
         ParserError {}
+    }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().token_type == TokenType::Semicolon {
+                return;
+            }
+
+            match self.peek().token_type {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => {
+                    self.advance();
+                }
+            }
+        }
     }
 }
