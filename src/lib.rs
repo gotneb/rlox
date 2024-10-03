@@ -3,14 +3,44 @@ mod token_type;
 mod scanner;
 mod expr;
 mod parser;
+mod interpreter;
+mod value;
 pub mod ast_printer;
 
-use std::io::{self, Write};
+use std::{fs, io::{self, Write}, process};
 
+use interpreter::Interpreter;
+use parser::Parser;
+use scanner::Scanner;
 use token::Token;
 use token_type::TokenType;
 
 static mut HAD_ERROR: bool = false;
+static mut HAD_RUNTIME_ERROR: bool = false;
+
+enum Exception {
+    RuntimeError(RuntimeError)
+}
+
+impl Exception {
+    fn runtime_error<T>(token: Token, message: String) -> Result<T, Exception> {
+        Err(Exception::RuntimeError(RuntimeError { token, message }))
+    }
+}
+
+struct RuntimeError {
+    token: Token,
+    message: String,
+}
+
+impl RuntimeError {
+    fn error(&self) {
+        println!("{}", self.message);
+        println!("[line {}]", self.token.line);
+
+        unsafe { HAD_RUNTIME_ERROR = true }
+    }
+}
 
 // TODO: In page 42 there's a place to check runtime error (a.k.a HAD_ERROR)
 // I haven't yet done this due that functions are still in process making.
@@ -37,10 +67,22 @@ pub fn print_error(token: &Token, msg: &str) {
     }
 }
 
-pub fn run_file(path: &str) {}
+pub fn run_file(path: &str) {
+    let mut interpreter = Interpreter::new();
+    let contents = fs::read_to_string(path).expect("File must be readable");
+    run(contents, &mut interpreter);
+
+    unsafe {
+        if HAD_RUNTIME_ERROR {
+            process::exit(70)
+        }
+    }
+}
 
 // REPL mode
 pub fn run_prompt() {
+    let mut interpreter = Interpreter::new();
+
     loop {
         print!(">> ");
         let mut user_input = String::new();
@@ -52,10 +94,17 @@ pub fn run_prompt() {
             break;
         }
 
-        run(user_input);
+        run(user_input.into(), &mut interpreter);
     }
 }
 
-fn run(source: &str) {
+fn run(source: String, interpreter: &mut Interpreter) {
+    let mut scanner = Scanner::new(source);
+    let tokens = scanner.scan_tokens();
 
+    let mut parser = Parser::new(tokens);
+    match parser.parse() {
+        Ok(expr) => interpreter.interpret(&expr),
+        Err(err) => println!("{:?}", err),
+    }
 }

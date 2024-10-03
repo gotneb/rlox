@@ -5,7 +5,8 @@ use crate::{
     token_type::TokenType,
 };
 
-struct ParserError;
+#[derive(Debug)]
+pub struct ParserError;
 
 type Result<T> = std::result::Result<T, ParserError>;
 
