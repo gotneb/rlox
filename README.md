@@ -1,5 +1,7 @@
 # Making a Language Interpreter
 
+<img src="https://craftinginterpreters.com/image/header-small.png" width="300">
+
 https://craftinginterpreters.com/
 
 This book walks through how to implement an interpreter for a scripting language.
