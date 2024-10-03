@@ -1,9 +1,8 @@
-use crate::{
+use crate::{print_error, syntax::{
     expr::Expr,
-    print_error,
     token::{Literal, Token},
     token_type::TokenType,
-};
+}};
 
 #[derive(Debug)]
 pub struct ParserError;

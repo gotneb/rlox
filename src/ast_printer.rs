@@ -1,4 +1,8 @@
-use crate::{expr::{Expr, Visitor}, token::{Literal, Token}, token_type::TokenType};
+use crate::syntax::{
+    expr::{Expr, Visitor},
+    token::{Literal, Token},
+    token_type::TokenType,
+};
 
 pub struct AstPrinter;
 
@@ -9,7 +13,7 @@ impl AstPrinter {
 
     fn parenthesize(&mut self, name: &str, exprs: Vec<&Expr>) -> String {
         let mut str = String::from(format!("({}", name));
-        
+
         for expr in exprs {
             str.push(' ');
             str.push_str(&self.visit_expr(expr));
@@ -23,7 +27,11 @@ impl AstPrinter {
 impl Visitor<String> for AstPrinter {
     fn visit_expr(&mut self, expr: &Expr) -> String {
         match expr {
-            Expr::Binary { left, operator, right } => self.parenthesize(&operator.lexeme, vec![left, right]),
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => self.parenthesize(&operator.lexeme, vec![left, right]),
             Expr::Grouping { expression } => self.parenthesize("group", vec![expression]),
             Expr::Literal { value } => match value {
                 Literal::Bool(value) => value.to_string(),
@@ -31,7 +39,7 @@ impl Visitor<String> for AstPrinter {
                 Literal::String(value) => value.to_string(),
                 Literal::None => "nil".into(),
             },
-            Expr::Unary { operator, right } => self.parenthesize(&operator.lexeme, vec![right])
+            Expr::Unary { operator, right } => self.parenthesize(&operator.lexeme, vec![right]),
         }
     }
 }

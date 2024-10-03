@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::token_type::TokenType;
+use super::token_type::TokenType;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {

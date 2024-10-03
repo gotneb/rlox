@@ -1,10 +1,7 @@
-mod token;
-mod token_type;
-mod scanner;
-mod expr;
-mod parser;
 mod interpreter;
-mod value;
+mod syntax;
+mod parser;
+mod scanner;
 pub mod ast_printer;
 
 use std::{fs, io::{self, Write}, process};
@@ -12,8 +9,7 @@ use std::{fs, io::{self, Write}, process};
 use interpreter::Interpreter;
 use parser::Parser;
 use scanner::Scanner;
-use token::Token;
-use token_type::TokenType;
+use syntax::{token::Token, token_type::TokenType};
 
 static mut HAD_ERROR: bool = false;
 static mut HAD_RUNTIME_ERROR: bool = false;
@@ -61,7 +57,7 @@ pub fn print_error(token: &Token, msg: &str) {
     } else {
         report(
             token.line, 
-            format!(" at '{}'", token.lexeme).as_str(), 
+            format!("at '{}'", token.lexeme).as_str(), 
             msg
         );
     }

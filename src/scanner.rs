@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    error, token::{Literal, Token}, token_type::TokenType
+    error,
+    syntax::{
+        token::{Literal, Token},
+        token_type::TokenType,
+    },
 };
 
 #[derive(Debug)]
@@ -59,20 +63,48 @@ impl Scanner {
             // Those are not, they might come with some lexeme else...
             '!' => {
                 let is_matched = self.match_next_token('=');
-                self.add_token(if is_matched  { TokenType::BangEqual } else { TokenType::Bang }, Literal::None)
-            },
+                self.add_token(
+                    if is_matched {
+                        TokenType::BangEqual
+                    } else {
+                        TokenType::Bang
+                    },
+                    Literal::None,
+                )
+            }
             '=' => {
                 let is_matched = self.match_next_token('=');
-                self.add_token(if is_matched { TokenType::EqualEqual } else { TokenType::Equal }, Literal::None)
-            },
+                self.add_token(
+                    if is_matched {
+                        TokenType::EqualEqual
+                    } else {
+                        TokenType::Equal
+                    },
+                    Literal::None,
+                )
+            }
             '<' => {
                 let is_matched = self.match_next_token('=');
-                self.add_token(if is_matched { TokenType::LessEqual } else { TokenType::Less }, Literal::None)
-            },
+                self.add_token(
+                    if is_matched {
+                        TokenType::LessEqual
+                    } else {
+                        TokenType::Less
+                    },
+                    Literal::None,
+                )
+            }
             '>' => {
                 let is_matched = self.match_next_token('=');
-                self.add_token(if is_matched { TokenType::GreaterEqual } else { TokenType::Greater }, Literal::None)
-            },
+                self.add_token(
+                    if is_matched {
+                        TokenType::GreaterEqual
+                    } else {
+                        TokenType::Greater
+                    },
+                    Literal::None,
+                )
+            }
             // Special case
             '/' => {
                 if self.match_next_token('/') {
@@ -84,7 +116,7 @@ impl Scanner {
                 }
             }
             // Meaningless lexemes... skip
-            ' ' | '\r' | '\t' => {},
+            ' ' | '\r' | '\t' => {}
             '\n' => self.line += 1,
             _ => {
                 // Detecting numbers is a litle more complex, we can check them
@@ -97,7 +129,7 @@ impl Scanner {
                 } else {
                     error(self.line, "Unexpected character.");
                 }
-            },
+            }
         }
     }
 
@@ -127,11 +159,12 @@ impl Scanner {
             }
         }
 
-        let value: f64 = self.source
-                            .get(self.start..self.current)
-                            .unwrap()
-                            .parse()
-                            .unwrap();
+        let value: f64 = self
+            .source
+            .get(self.start..self.current)
+            .unwrap()
+            .parse()
+            .unwrap();
         self.add_token(TokenType::Number, Literal::Number(value))
     }
 
@@ -152,16 +185,12 @@ impl Scanner {
         self.advance();
 
         // Trim surrounding quotes
-        let value = self.source[self.start+1..self.current-1]
-                            .to_string();
+        let value = self.source[self.start + 1..self.current - 1].to_string();
         self.add_token(TokenType::String, Literal::String(value));
-
     }
 
     fn add_token(&mut self, token_type: TokenType, literal: Literal) {
-        let text = self
-                            .source[self.start..self.current]
-                            .to_string();
+        let text = self.source[self.start..self.current].to_string();
         self.tokens
             .push(Token::new(token_type, text, literal, self.line));
     }
@@ -198,30 +227,28 @@ impl Scanner {
 
     fn peek_next(&self) -> char {
         if self.current + 1 >= self.source.len() {
-            return '\0'
+            return '\0';
         }
         self.source.as_bytes()[self.current + 1] as char
     }
 
     fn is_alpha(&self, c: char) -> bool {
-        return (c >= 'a' && c <= 'z') ||
-               (c >= 'A' && c <= 'Z') || 
-               c == '_';
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
     }
 
     // TODO: Rust' std has a lib for this, i think...
     fn is_alpha_numeric(&self, c: char) -> bool {
-        return self.is_alpha(c) || self.is_digit(c)
+        return self.is_alpha(c) || self.is_digit(c);
     }
 
     // TODO: Rust' std has a lib for this, i think...
     fn is_digit(&self, c: char) -> bool {
-        return c >= '0' && c <= '9'
+        return c >= '0' && c <= '9';
     }
 
     fn get_keywords(&self) -> HashMap<String, TokenType> {
         let mut hash = HashMap::new();
-        
+
         hash.insert("and".into(), TokenType::And);
         hash.insert("class".into(), TokenType::Class);
         hash.insert("else".into(), TokenType::Else);
@@ -286,9 +313,24 @@ mod tests {
         let tokens = scanner.scan_tokens();
 
         let expected = vec![
-            Token::new(TokenType::Number, "3.14159".into(), Literal::Number(3.14159), 1),
-            Token::new(TokenType::Number, "299792458".into(), Literal::Number(299792458.), 2),
-            Token::new(TokenType::Number, "2.71828".into(), Literal::Number(2.71828), 3),
+            Token::new(
+                TokenType::Number,
+                "3.14159".into(),
+                Literal::Number(3.14159),
+                1,
+            ),
+            Token::new(
+                TokenType::Number,
+                "299792458".into(),
+                Literal::Number(299792458.),
+                2,
+            ),
+            Token::new(
+                TokenType::Number,
+                "2.71828".into(),
+                Literal::Number(2.71828),
+                3,
+            ),
             Token::new(TokenType::Number, "123".into(), Literal::Number(123.0), 4),
             Token::new(TokenType::Dot, ".".into(), Literal::None, 4),
             Token::new(TokenType::Dot, ".".into(), Literal::None, 5),
@@ -304,7 +346,9 @@ mod tests {
 
     #[test]
     fn keywords() {
-        let mut scanner = Scanner::new("and class else false for if nil or print return super this true var while".into());
+        let mut scanner = Scanner::new(
+            "and class else false for if nil or print return super this true var while".into(),
+        );
 
         let tokens = scanner.scan_tokens();
 
@@ -334,19 +378,27 @@ mod tests {
     }
 
     fn whistespaces() {
-        let mut scanner = Scanner::new("var
+        let mut scanner = Scanner::new(
+            "var
         // Yes, this variable is longer on purpose :)
         data_do_ano_do_descorimento_do_brasil             =
         1500
         ;
-        ".into());
+        "
+            .into(),
+        );
 
         let tokens = scanner.scan_tokens();
 
         let expected = vec![
             Token::new(TokenType::Var, "var".into(), Literal::None, 1),
             Token::new(TokenType::Slash, "//".into(), Literal::None, 2),
-            Token::new(TokenType::Identifier, "data_do_ano_do_descorimento_do_brasil".into(), Literal::None, 3),
+            Token::new(
+                TokenType::Identifier,
+                "data_do_ano_do_descorimento_do_brasil".into(),
+                Literal::None,
+                3,
+            ),
             Token::new(TokenType::Equal, "=".into(), Literal::None, 3),
             Token::new(TokenType::Number, "1500".into(), Literal::Number(1500.0), 4),
             Token::new(TokenType::Semicolon, ";".into(), Literal::None, 5),

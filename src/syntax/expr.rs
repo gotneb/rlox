@@ -1,4 +1,4 @@
-use crate::token::{Literal, Token};
+use super::token::{Literal, Token};
 
 // Explanations
 //

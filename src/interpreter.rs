@@ -1,9 +1,9 @@
-use crate::{
+use crate::{syntax::{
     expr::{self, Expr, Visitor},
     token::{Literal, Token},
     token_type::TokenType,
-    value::Value, Exception,
-};
+    value::Value,
+}, Exception};
 
 type Result<T> = std::result::Result<T, Exception>;
 
