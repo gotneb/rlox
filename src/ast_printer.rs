@@ -4,7 +4,7 @@ pub struct AstPrinter;
 
 impl AstPrinter {
     pub fn print(&mut self, expr: Expr) -> String {
-        self.visit(&expr)
+        self.visit_expr(&expr)
     }
 
     fn parenthesize(&mut self, name: &str, exprs: Vec<&Expr>) -> String {
@@ -12,7 +12,7 @@ impl AstPrinter {
         
         for expr in exprs {
             str.push(' ');
-            str.push_str(&self.visit(expr));
+            str.push_str(&self.visit_expr(expr));
         }
         str.push_str(")");
 
@@ -21,7 +21,7 @@ impl AstPrinter {
 }
 
 impl Visitor<String> for AstPrinter {
-    fn visit(&mut self, expr: &Expr) -> String {
+    fn visit_expr(&mut self, expr: &Expr) -> String {
         match expr {
             Expr::Binary { left, operator, right } => self.parenthesize(&operator.lexeme, vec![left, right]),
             Expr::Grouping { expression } => self.parenthesize("group", vec![expression]),

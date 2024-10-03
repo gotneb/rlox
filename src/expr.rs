@@ -13,7 +13,7 @@ use crate::token::{Literal, Token};
 // So the Cleanest way was creating it inside the enum :)
 
 pub trait Visitor<T> {
-    fn visit(&mut self, expression: &Expr) -> T;
+    fn visit_expr(&mut self, expression: &Expr) -> T;
 }
 
 pub enum Expr {
