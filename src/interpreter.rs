@@ -51,7 +51,7 @@ impl Interpreter {
                 number
             },
             Value::String(string) => format!("\"{}\"", string),
-            _ => format!("{:?}", value),
+            Value::Boolean(value) => value.to_string(),
         }
     }
 
