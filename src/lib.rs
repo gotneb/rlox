@@ -1,10 +1,14 @@
+pub mod ast_printer;
 mod interpreter;
-mod syntax;
 mod parser;
 mod scanner;
-pub mod ast_printer;
+mod syntax;
 
-use std::{fs, io::{self, Write}, process};
+use std::{
+    fs,
+    io::{self, Write},
+    process,
+};
 
 use interpreter::Interpreter;
 use parser::Parser;
@@ -15,7 +19,7 @@ static mut HAD_ERROR: bool = false;
 static mut HAD_RUNTIME_ERROR: bool = false;
 
 enum Exception {
-    RuntimeError(RuntimeError)
+    RuntimeError(RuntimeError),
 }
 
 impl Exception {
@@ -55,11 +59,7 @@ pub fn print_error(token: &Token, msg: &str) {
     if token.token_type == TokenType::Eof {
         report(token.line, " at end", msg);
     } else {
-        report(
-            token.line, 
-            format!("at '{}'", token.lexeme).as_str(), 
-            msg
-        );
+        report(token.line, format!("at '{}'", token.lexeme).as_str(), msg);
     }
 }
 
@@ -80,7 +80,7 @@ pub fn run_prompt() {
     let mut interpreter = Interpreter::new();
 
     loop {
-        print!(">> ");
+        print!(">>> ");
         let mut user_input = String::new();
         let _ = io::stdout().flush();
         let bytes = io::stdin().read_line(&mut user_input).unwrap();

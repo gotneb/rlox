@@ -50,6 +50,7 @@ impl Interpreter {
 
                 number
             },
+            Value::String(string) => format!("\"{}\"", string),
             _ => format!("{:?}", value),
         }
     }
