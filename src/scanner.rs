@@ -105,6 +105,7 @@ impl Scanner {
                     Literal::None,
                 )
             }
+
             // Special case
             '/' => {
                 if self.match_next_token('/') {
@@ -115,9 +116,14 @@ impl Scanner {
                     self.add_token(TokenType::Slash, Literal::None)
                 }
             }
+
             // Meaningless lexemes... skip
             ' ' | '\r' | '\t' => {}
             '\n' => self.line += 1,
+            // String literals
+            '"' => self.string(),
+
+            // If it isn't a string, then it only can be: number | variable | error
             _ => {
                 // Detecting numbers is a litle more complex, we can check them
                 // in the not matched branch, because in all above cases is more easy to
@@ -169,7 +175,7 @@ impl Scanner {
     }
 
     fn string(&mut self) {
-        if self.peek() != '"' && !self.is_at_end() {
+        while self.peek() != '"' && !self.is_at_end() {
             // Lox has support for multi-string
             if self.peek() == '\n' {
                 self.line += 1;
@@ -377,11 +383,12 @@ mod tests {
         }
     }
 
+    #[test]
     fn whistespaces() {
         let mut scanner = Scanner::new(
             "var
         // Yes, this variable is longer on purpose :)
-        data_do_ano_do_descorimento_do_brasil             =
+        data_do_ano_do_descobrimento_do_brasil             =
         1500
         ;
         "
@@ -392,17 +399,53 @@ mod tests {
 
         let expected = vec![
             Token::new(TokenType::Var, "var".into(), Literal::None, 1),
-            Token::new(TokenType::Slash, "//".into(), Literal::None, 2),
             Token::new(
                 TokenType::Identifier,
-                "data_do_ano_do_descorimento_do_brasil".into(),
+                "data_do_ano_do_descobrimento_do_brasil".into(),
                 Literal::None,
                 3,
             ),
             Token::new(TokenType::Equal, "=".into(), Literal::None, 3),
             Token::new(TokenType::Number, "1500".into(), Literal::Number(1500.0), 4),
             Token::new(TokenType::Semicolon, ";".into(), Literal::None, 5),
-            Token::new(TokenType::Eof, "".into(), Literal::None, 1),
+            Token::new(TokenType::Eof, "".into(), Literal::None, 6),
         ];
+
+        assert_eq!(tokens.len(), expected.len());
+        for (index, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected[index]);
+        }
+    }
+
+    #[test]
+    fn strings() {
+        let mut scanner = Scanner::new(String::from("\"\" \n \"string\""));
+        let tokens = scanner.scan_tokens();
+
+        let expected_tokens = [
+            Token {
+                token_type: TokenType::String,
+                lexeme: String::from("\"\""),
+                literal: Literal::String("".into()),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::String,
+                lexeme: "\"string\"".into(),
+                literal: Literal::String("string".into()),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::Eof,
+                lexeme: "".into(),
+                literal: Literal::None,
+                line: 2,
+            },
+        ];
+
+        assert_eq!(tokens.len(), expected_tokens.len());
+        for (i, token) in tokens.iter().enumerate() {
+            assert_eq!(*token, expected_tokens[i]);
+        }
     }
 }
