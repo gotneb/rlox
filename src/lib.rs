@@ -1,4 +1,4 @@
-pub mod ast_printer;
+mod utils;
 mod interpreter;
 mod parser;
 mod scanner;
