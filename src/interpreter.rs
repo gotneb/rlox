@@ -1,9 +1,13 @@
-use crate::{syntax::{
-    expr::{self, Expr, Visitor},
-    token::{Literal, Token},
-    token_type::TokenType,
-    value::Value,
-}, Exception};
+use crate::{
+    syntax::{
+        expr::{self, Expr},
+        stmt::{self, Stmt},
+        token::{Literal, Token},
+        token_type::TokenType,
+        value::Value,
+    },
+    Exception,
+};
 
 type Result<T> = std::result::Result<T, Exception>;
 
@@ -15,18 +19,26 @@ impl Interpreter {
         Self {}
     }
 
-    pub fn interpret(&mut self, expr: &Expr) {
-        match self.evaluate(expr) {
-            Ok(value) => println!("{}", Interpreter::stringfy(&value)),
-            Err(e) => match e {
-                Exception::RuntimeError(e) => e.error(),
+    // List of statements == actual program
+    pub fn interpret(&mut self, statements: Vec<Stmt>) {
+        for stmt in statements {
+            match self.execute(&stmt) {
+                Ok(_) => (),
+                Err(e) => match e {
+                    Exception::RuntimeError(e) => e.error(),
+                },
             }
         }
     }
 
+    fn execute(&mut self, stmt: &Stmt) -> Result<()> {
+        stmt::Visitor::visit_stmt(self, stmt)
+        //Interpreter::visit_stmt(self, stmt)
+    }
+
     fn evaluate(&mut self, expr: &Expr) -> Result<Value> {
-        // expr::Visitor::visit_expr(self, expr)
-        Interpreter::visit_expr(self, expr)
+        expr::Visitor::visit_expr(self, expr)
+        //Interpreter::visit_expr(self, expr)
     }
 
     fn is_equal(a: &Value, b: &Value) -> bool {
@@ -45,14 +57,25 @@ impl Interpreter {
             Value::Number(number) => {
                 let number = number.to_string();
                 if number.ends_with(".0") {
-                    return number.chars().take(number.len()-2).collect()
+                    return number.chars().take(number.len() - 2).collect();
                 }
 
                 number
-            },
+            }
             Value::String(string) => format!("\"{}\"", string),
             Value::Boolean(value) => value.to_string(),
         }
+    }
+
+    fn visit_print_stmt(&mut self, expr: &Expr) -> Result<()> {
+        let value = self.evaluate(expr)?;
+        println!("{}", Interpreter::stringfy(&value));
+        Ok(())
+    }
+
+    fn visit_expression_stmt(&mut self, expr: &Expr) -> Result<()> {
+        self.evaluate(expr)?;
+        Ok(())
     }
 
     fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
@@ -86,37 +109,37 @@ impl Interpreter {
             // --------------------------------------
             TokenType::Minus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left - right)),
-                _ => Interpreter::number_operands_error(operator)
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::Slash => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => {
                     if right == 0.0 {
-                        return Interpreter::zero_division_error(operator)
+                        return Interpreter::zero_division_error(operator);
                     }
                     Ok(Value::Number(left / right))
-                },
-                _ => Interpreter::number_operands_error(operator)
+                }
+                _ => Interpreter::number_operands_error(operator),
             },
             TokenType::Star => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left * right)),
-                _ => Interpreter::number_operands_error(operator)
-            }
+                _ => Interpreter::number_operands_error(operator),
+            },
             TokenType::Plus => match (left, right) {
                 (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left + right)),
                 (Value::String(left), Value::String(right)) => {
                     let mut s = left.clone();
                     s.push_str(&right);
                     Ok(Value::String(s))
-                },
+                }
                 // Overlord 'string' + 'number'
                 (Value::String(string), Value::Number(number)) => {
                     Ok(Value::String(format!("{}{}", string, number)))
-                },
+                }
                 (Value::Number(number), Value::String(string)) => {
                     Ok(Value::String(format!("{}{}", number, string)))
                 }
-                _ => Interpreter::number_operands_error(operator)
-            }
+                _ => Interpreter::number_operands_error(operator),
+            },
             _ => todo!(),
         }
     }
@@ -138,13 +161,13 @@ impl Interpreter {
                 Value::Number(number) => Ok(Value::Number(-number)),
                 _ => Interpreter::number_operand_error(operator),
             },
-            TokenType::Bang => Ok(Value::Boolean(Interpreter::is_truthy(&right))),
+            TokenType::Bang => Ok(Value::Boolean(!Interpreter::is_truthy(&right))),
             _ => todo!(),
         }
     }
 
     fn zero_division_error<T>(operator: &Token) -> Result<T> {
-        Exception::runtime_error(operator.clone(), "Zero division error".into())
+        Exception::runtime_error(operator.clone(), "Zero division error.".into())
     }
 
     fn number_operand_error<T>(operator: &Token) -> Result<T> {
@@ -165,10 +188,23 @@ impl Interpreter {
     }
 }
 
+impl stmt::Visitor<Result<()>> for Interpreter {
+    fn visit_stmt(&mut self, stmt: &Stmt) -> Result<()> {
+        match stmt {
+            Stmt::Print(expr) => self.visit_print_stmt(expr),
+            Stmt::Expression(expr) => self.visit_expression_stmt(expr),
+        }
+    }
+}
+
 impl expr::Visitor<Result<Value>> for Interpreter {
     fn visit_expr(&mut self, expr: &Expr) -> Result<Value> {
         match expr {
-            Expr::Binary { left, operator, right } => self.visit_binary_expr(left, operator, right),
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => self.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression } => self.evaluate(expression),
             Expr::Literal { value } => Ok(self.visit_literal_expr(value)),
             Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),

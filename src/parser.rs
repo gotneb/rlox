@@ -1,8 +1,12 @@
-use crate::{print_error, syntax::{
-    expr::Expr,
-    token::{Literal, Token},
-    token_type::TokenType,
-}};
+use crate::{
+    print_error,
+    syntax::{
+        expr::Expr,
+        stmt::Stmt,
+        token::{Literal, Token},
+        token_type::TokenType,
+    },
+};
 
 #[derive(Debug)]
 pub struct ParserError;
@@ -19,8 +23,33 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr> {
-        self.expression()
+    pub fn parse(&mut self) -> Result<Vec<Stmt>> {
+        let mut statements: Vec<Stmt> = vec![];
+
+        while !self.is_at_end() {
+            statements.push(self.statement()?);
+        }
+
+        Ok(statements)
+    }
+
+    fn statement(&mut self) -> Result<Stmt> {
+        if self.match_token(vec![TokenType::Print]) {
+            return self.print_stmt();
+        }
+        self.expression_stmt()
+    }
+
+    fn print_stmt(&mut self) -> Result<Stmt> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Print(expr))
+    }
+
+    fn expression_stmt(&mut self) -> Result<Stmt> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Expression(expr))
     }
 
     fn expression(&mut self) -> Result<Expr> {

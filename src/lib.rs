@@ -1,8 +1,8 @@
-mod utils;
 mod interpreter;
 mod parser;
 mod scanner;
 mod syntax;
+mod utils;
 
 use std::{
     fs,
@@ -35,8 +35,7 @@ struct RuntimeError {
 
 impl RuntimeError {
     fn error(&self) {
-        println!("{}", self.message);
-        println!("[line {}]", self.token.line);
+        println!("Error at line {}: {}", self.token.line, self.message);
 
         unsafe { HAD_RUNTIME_ERROR = true }
     }
@@ -50,7 +49,7 @@ pub fn error(line: usize, message: &str) {
 }
 
 pub fn report(line: usize, location: &str, message: &str) {
-    eprintln!("[Line {}] Error {}: {}", line, location, message);
+    eprintln!("Error at line {} {}: {}", line, location, message);
     // Aww men... Here goes unsafe :( Is there another way to make this?
     unsafe { HAD_ERROR = true };
 }
@@ -100,7 +99,7 @@ fn run(source: String, interpreter: &mut Interpreter) {
 
     let mut parser = Parser::new(tokens);
     match parser.parse() {
-        Ok(expr) => interpreter.interpret(&expr),
-        Err(err) => println!("{:?}", err),
+        Ok(statements) => interpreter.interpret(statements),
+        Err(_) => (),
     }
 }
