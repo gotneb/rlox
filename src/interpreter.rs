@@ -89,7 +89,12 @@ impl Interpreter {
                 _ => Interpreter::number_operands_error(operator)
             },
             TokenType::Slash => match (left, right) {
-                (Value::Number(left), Value::Number(right)) => Ok(Value::Number(left / right)),
+                (Value::Number(left), Value::Number(right)) => {
+                    if right == 0.0 {
+                        return Interpreter::zero_division_error(operator)
+                    }
+                    Ok(Value::Number(left / right))
+                },
                 _ => Interpreter::number_operands_error(operator)
             },
             TokenType::Star => match (left, right) {
@@ -136,6 +141,10 @@ impl Interpreter {
             TokenType::Bang => Ok(Value::Boolean(Interpreter::is_truthy(&right))),
             _ => todo!(),
         }
+    }
+
+    fn zero_division_error<T>(operator: &Token) -> Result<T> {
+        Exception::runtime_error(operator.clone(), "Zero division error".into())
     }
 
     fn number_operand_error<T>(operator: &Token) -> Result<T> {
