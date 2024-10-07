@@ -1,0 +1,3 @@
+print "Oi, meu nome é Gabriel";
+print "1 + 1 = " + (1+1);
+print !true;
