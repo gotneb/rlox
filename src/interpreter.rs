@@ -10,7 +10,7 @@ type Result<T> = std::result::Result<T, Exception>;
 pub struct Interpreter;
 
 impl Interpreter {
-    // Nothing wet (laughs)...
+    // Nothing yet (laughs)...
     pub fn new() -> Self {
         Self {}
     }
@@ -103,6 +103,13 @@ impl Interpreter {
                     s.push_str(&right);
                     Ok(Value::String(s))
                 },
+                // Overlord 'string' + 'number'
+                (Value::String(string), Value::Number(number)) => {
+                    Ok(Value::String(format!("{}{}", string, number)))
+                },
+                (Value::Number(number), Value::String(string)) => {
+                    Ok(Value::String(format!("{}{}", number, string)))
+                }
                 _ => Interpreter::number_operands_error(operator)
             }
             _ => todo!(),
