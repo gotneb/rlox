@@ -40,6 +40,7 @@ impl Visitor<String> for AstPrinter {
                 Literal::None => "nil".into(),
             },
             Expr::Unary { operator, right } => self.parenthesize(&operator.lexeme, vec![right]),
+            Expr::Variable { name: _ } => todo!(),
         }
     }
 }

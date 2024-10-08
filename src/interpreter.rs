@@ -1,4 +1,5 @@
 use crate::{
+    environment::Environment,
     syntax::{
         expr::{self, Expr},
         stmt::{self, Stmt},
@@ -11,12 +12,16 @@ use crate::{
 
 type Result<T> = std::result::Result<T, Exception>;
 
-pub struct Interpreter;
+pub struct Interpreter {
+    env: Environment,
+}
 
 impl Interpreter {
     // Nothing yet (laughs)...
     pub fn new() -> Self {
-        Self {}
+        Self {
+            env: Environment::new(),
+        }
     }
 
     // List of statements == actual program
@@ -70,6 +75,20 @@ impl Interpreter {
     fn visit_print_stmt(&mut self, expr: &Expr) -> Result<()> {
         let value = self.evaluate(expr)?;
         println!("{}", Interpreter::stringfy(&value));
+        Ok(())
+    }
+
+    fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<()> {
+        let mut value = Value::Nil;
+
+        match initializer {
+            Some(expr) => {
+                value = self.evaluate(expr)?;
+            }
+            None => (),
+        };
+
+        self.env.define(name.lexeme.clone(), value);
         Ok(())
     }
 
@@ -166,6 +185,10 @@ impl Interpreter {
         }
     }
 
+    fn visit_variable_expr(&self, name: &Token) -> Result<Value> {
+        self.env.get(name)
+    }
+
     fn zero_division_error<T>(operator: &Token) -> Result<T> {
         Exception::runtime_error(operator.clone(), "Zero division error.".into())
     }
@@ -193,6 +216,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
         match stmt {
             Stmt::Print(expr) => self.visit_print_stmt(expr),
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
+            Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
         }
     }
 }
@@ -208,6 +232,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             Expr::Grouping { expression } => self.evaluate(expression),
             Expr::Literal { value } => Ok(self.visit_literal_expr(value)),
             Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),
+            Expr::Variable { name } => self.visit_variable_expr(name),
         }
     }
 }

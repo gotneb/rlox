@@ -27,10 +27,31 @@ impl Parser {
         let mut statements: Vec<Stmt> = vec![];
 
         while !self.is_at_end() {
-            statements.push(self.statement()?);
+            // Unwrap panics... It isn't good for user see useless details about implementation...
+            // statements.push(self.declaration().unwrap());
+
+            if let Some(stmt) = self.declaration() {
+                statements.push(stmt);
+            }
         }
 
         Ok(statements)
+    }
+
+    fn declaration(&mut self) -> Option<Stmt> {
+        let result = if self.match_token(vec![TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+
+        match result {
+            Ok(stmt) => Some(stmt),
+            Err(_) => {
+                self.synchronize();
+                None
+            }
+        }
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -42,13 +63,28 @@ impl Parser {
 
     fn print_stmt(&mut self) -> Result<Stmt> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        self.consume(TokenType::Semicolon, "Expected ';' after value.")?;
         Ok(Stmt::Print(expr))
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt> {
+        let name = self.consume(TokenType::Identifier, "Expected a variable name.")?;
+
+        let mut initializer = None;
+        if self.match_token(vec![TokenType::Equal]) {
+            initializer = Some(self.expression()?);
+        }
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expected ';' after variable declaration.",
+        )?;
+        Ok(Stmt::Var { name, initializer })
     }
 
     fn expression_stmt(&mut self) -> Result<Stmt> {
         let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        self.consume(TokenType::Semicolon, "Expected ';' after value.")?;
         Ok(Stmt::Expression(expr))
     }
 
@@ -153,9 +189,15 @@ impl Parser {
             });
         }
 
+        if self.match_token(vec![TokenType::Identifier]) {
+            return Ok(Expr::Variable {
+                name: self.previous(),
+            });
+        }
+
         if self.match_token(vec![TokenType::LeftParen]) {
             let expr = self.expression();
-            self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
+            self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
             return Ok(Expr::Grouping {
                 expression: Box::new(expr?),
             });
