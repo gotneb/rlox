@@ -41,6 +41,7 @@ impl Visitor<String> for AstPrinter {
             },
             Expr::Unary { operator, right } => self.parenthesize(&operator.lexeme, vec![right]),
             Expr::Variable { name: _ } => todo!(),
+            Expr::Assign { name: _, value: _ } => todo!(),
         }
     }
 }

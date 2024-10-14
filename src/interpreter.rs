@@ -92,6 +92,11 @@ impl Interpreter {
         Ok(())
     }
 
+    fn visit_assign_expr(&mut self, name: &Token, expr: &Expr) -> Result<Value> {
+        let value = self.evaluate(expr)?;
+        self.env.assign(name, value)
+    }
+
     fn visit_expression_stmt(&mut self, expr: &Expr) -> Result<()> {
         self.evaluate(expr)?;
         Ok(())
@@ -233,6 +238,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             Expr::Literal { value } => Ok(self.visit_literal_expr(value)),
             Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),
             Expr::Variable { name } => self.visit_variable_expr(name),
+            Expr::Assign { name, value } => self.visit_assign_expr(name, value),
         }
     }
 }

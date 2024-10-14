@@ -27,9 +27,6 @@ impl Parser {
         let mut statements: Vec<Stmt> = vec![];
 
         while !self.is_at_end() {
-            // Unwrap panics... It isn't good for user see useless details about implementation...
-            // statements.push(self.declaration().unwrap());
-
             if let Some(stmt) = self.declaration() {
                 statements.push(stmt);
             }
@@ -89,21 +86,41 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr> {
+        let expr = self.equality()?;
+
+        if self.match_token(vec![TokenType::Equal]) {
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            if let Expr::Variable { name, .. } = expr {
+                return Ok(Expr::Assign {
+                    name,
+                    value: Box::new(value),
+                });
+            }
+
+            return Err(self.error(equals, "Invalid assignment target."));
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr> {
-        let mut expr = self.comparison();
+        let mut expr = self.comparison()?;
         while self.match_token(vec![TokenType::BangEqual, TokenType::EqualEqual]) {
             let operator = self.previous();
-            let right = self.comparison();
-            expr = Ok(Expr::Binary {
-                left: Box::new(expr?),
+            let right = self.comparison()?;
+            expr = Expr::Binary {
+                left: Box::new(expr),
                 operator,
-                right: Box::new(right?),
-            })
+                right: Box::new(right),
+            }
         }
-        expr
+        Ok(expr)
     }
 
     fn comparison(&mut self) -> Result<Expr> {
