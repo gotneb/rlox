@@ -38,6 +38,10 @@ impl Parser {
     fn declaration(&mut self) -> Option<Stmt> {
         let result = if self.match_token(vec![TokenType::Var]) {
             self.var_declaration()
+        } else if self.match_token(vec![TokenType::LeftBrace]) {
+            Ok(Stmt::Block {
+                statements: self.block().unwrap_or(vec![]),
+            })
         } else {
             self.statement()
         };
@@ -83,6 +87,19 @@ impl Parser {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "Expected ';' after value.")?;
         Ok(Stmt::Expression(expr))
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmt>> {
+        let mut statements = vec![];
+
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            if let Some(stmt) = self.declaration() {
+                statements.push(stmt);
+            }
+        }
+
+        self.consume(TokenType::RightBrace, "Expected '}' after block.")?;
+        Ok(statements)
     }
 
     fn expression(&mut self) -> Result<Expr> {

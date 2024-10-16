@@ -1,5 +1,5 @@
 use crate::{
-    environment::Environment,
+    environment::{EnvRef, Environment},
     syntax::{
         expr::{self, Expr},
         stmt::{self, Stmt},
@@ -13,14 +13,13 @@ use crate::{
 type Result<T> = std::result::Result<T, Exception>;
 
 pub struct Interpreter {
-    env: Environment,
+    env: EnvRef,
 }
 
 impl Interpreter {
-    // Nothing yet (laughs)...
     pub fn new() -> Self {
         Self {
-            env: Environment::new(),
+            env: Environment::new_global(),
         }
     }
 
@@ -38,12 +37,25 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<()> {
         stmt::Visitor::visit_stmt(self, stmt)
-        //Interpreter::visit_stmt(self, stmt)
+    }
+
+    fn execute_block(&mut self, statements: &Vec<Stmt>, env: EnvRef) -> Result<()> {
+        let previous = self.env.clone();
+
+        self.env = env;
+        for statement in statements {
+            if let Err(e) = self.execute(statement) {
+                self.env = previous;
+                return Err(e);
+            }
+        }
+
+        self.env = previous;
+        Ok(())
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<Value> {
         expr::Visitor::visit_expr(self, expr)
-        //Interpreter::visit_expr(self, expr)
     }
 
     fn is_equal(a: &Value, b: &Value) -> bool {
@@ -88,13 +100,13 @@ impl Interpreter {
             None => (),
         };
 
-        self.env.define(name.lexeme.clone(), value);
+        self.env.borrow_mut().define(name.lexeme.clone(), value);
         Ok(())
     }
 
     fn visit_assign_expr(&mut self, name: &Token, expr: &Expr) -> Result<Value> {
         let value = self.evaluate(expr)?;
-        self.env.assign(name, value)
+        self.env.borrow_mut().assign(name, value)
     }
 
     fn visit_expression_stmt(&mut self, expr: &Expr) -> Result<()> {
@@ -191,7 +203,7 @@ impl Interpreter {
     }
 
     fn visit_variable_expr(&self, name: &Token) -> Result<Value> {
-        self.env.get(name)
+        self.env.borrow().get(name)
     }
 
     fn zero_division_error<T>(operator: &Token) -> Result<T> {
@@ -222,6 +234,9 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::Print(expr) => self.visit_print_stmt(expr),
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
+            Stmt::Block { statements } => {
+                self.execute_block(statements, Environment::new_local(&self.env))
+            }
         }
     }
 }
