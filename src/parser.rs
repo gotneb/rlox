@@ -38,10 +38,6 @@ impl Parser {
     fn declaration(&mut self) -> Option<Stmt> {
         let result = if self.match_token(vec![TokenType::Var]) {
             self.var_declaration()
-        } else if self.match_token(vec![TokenType::LeftBrace]) {
-            Ok(Stmt::Block {
-                statements: self.block().unwrap_or(vec![]),
-            })
         } else {
             self.statement()
         };
@@ -56,10 +52,35 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt> {
-        if self.match_token(vec![TokenType::Print]) {
+        if self.match_token(vec![TokenType::If]) {
+            return self.if_statement();
+        } else if self.match_token(vec![TokenType::Print]) {
             return self.print_stmt();
+        } else if self.match_token(vec![TokenType::LeftBrace]) {
+            return Ok(Stmt::Block {
+                statements: self.block().unwrap_or(vec![]),
+            })
         }
+        
         self.expression_stmt()
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt> {
+        self.consume(TokenType::LeftParen, "Expected '(' after if keyword.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expected ')' after condition.")?;
+
+        let then_branch = self.statement()?;
+        let mut else_branch = None;
+        if self.match_token(vec![TokenType::Else]) {
+            else_branch = Some(Box::new(self.statement()?));
+        }
+
+        Ok(Stmt::If {
+            condition,
+            then_branch: Box::new(then_branch),
+            else_branch,
+        })
     }
 
     fn print_stmt(&mut self) -> Result<Stmt> {

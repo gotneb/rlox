@@ -1,0 +1,7 @@
+var nome = "Fulano";
+
+if (nome == "Gabriel") {
+    print "Oi, " + nome + "!";
+} else {
+    print "Seu nome não é Gabriel!";
+}

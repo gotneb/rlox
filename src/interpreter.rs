@@ -114,6 +114,22 @@ impl Interpreter {
         Ok(())
     }
 
+    fn visit_if_stmt(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Box<Stmt>,
+        else_branch: &Option<Box<Stmt>>,
+    ) -> Result<()> {
+        if Interpreter::is_truthy(&self.evaluate(condition)?) {
+            self.execute(&then_branch)?;
+        } else {
+            if let Some(else_branch) = else_branch {
+                self.execute(else_branch)?;
+            }
+        }
+        Ok(())
+    }
+
     fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
         let left = self.evaluate(left)?;
         let right = self.evaluate(right)?;
@@ -237,6 +253,11 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             Stmt::Block { statements } => {
                 self.execute_block(statements, Environment::new_local(&self.env))
             }
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.visit_if_stmt(condition, then_branch, else_branch),
         }
     }
 }

@@ -4,6 +4,7 @@ pub trait Visitor<T> {
     fn visit_stmt(&mut self, stmt: &Stmt) -> T;
 }
 
+#[derive(Debug)]
 pub enum Stmt {
     Expression(Expr),
     Print(Expr),
@@ -13,5 +14,10 @@ pub enum Stmt {
     },
     Block {
         statements: Vec<Stmt>,
+    },
+    If {
+        condition: Expr,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
     },
 }
