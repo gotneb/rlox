@@ -104,6 +104,13 @@ impl Interpreter {
         Ok(())
     }
 
+    fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> Result<()> {
+        while Interpreter::is_truthy(&self.evaluate(condition)?) {
+            self.execute(body)?;
+        }
+        Ok(())
+    }
+
     fn visit_assign_expr(&mut self, name: &Token, expr: &Expr) -> Result<Value> {
         let value = self.evaluate(expr)?;
         self.env.borrow_mut().assign(name, value)
@@ -279,6 +286,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 then_branch,
                 else_branch,
             } => self.visit_if_stmt(condition, then_branch, else_branch),
+            Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
         }
     }
 }
@@ -296,7 +304,11 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),
             Expr::Variable { name } => self.visit_variable_expr(name),
             Expr::Assign { name, value } => self.visit_assign_expr(name, value),
-            Expr::Logical { left, operator, right } => self.visit_logical_expr(left, operator, right)
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => self.visit_logical_expr(left, operator, right),
         }
     }
 }

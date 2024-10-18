@@ -56,6 +56,8 @@ impl Parser {
             return self.if_statement();
         } else if self.match_token(vec![TokenType::Print]) {
             return self.print_stmt();
+        } else if self.match_token(vec![TokenType::While]) {
+            return self.while_stmt();
         } else if self.match_token(vec![TokenType::LeftBrace]) {
             return Ok(Stmt::Block {
                 statements: self.block().unwrap_or(vec![]),
@@ -102,6 +104,16 @@ impl Parser {
             "Expected ';' after variable declaration.",
         )?;
         Ok(Stmt::Var { name, initializer })
+    }
+
+    fn while_stmt(&mut self) -> Result<Stmt> {
+        self.consume(TokenType::LeftParen, "Expected '(' after 'while'.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expected ')' after condition.")?;
+
+        let body = Box::new(self.statement()?);
+
+        Ok(Stmt::While { condition, body })
     }
 
     fn expression_stmt(&mut self) -> Result<Stmt> {
