@@ -205,6 +205,27 @@ impl Interpreter {
         }
     }
 
+    fn visit_logical_expr(
+        &mut self,
+        left: &Box<Expr>,
+        operator: &Token,
+        right: &Box<Expr>,
+    ) -> Result<Value> {
+        let left = self.evaluate(left)?;
+
+        if operator.token_type == TokenType::Or {
+            if Interpreter::is_truthy(&left) {
+                return Ok(left);
+            }
+        } else {
+            if !Interpreter::is_truthy(&left) {
+                return Ok(left);
+            }
+        }
+
+        self.evaluate(right)
+    }
+
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
         let right = self.evaluate(right)?;
 
@@ -275,6 +296,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),
             Expr::Variable { name } => self.visit_variable_expr(name),
             Expr::Assign { name, value } => self.visit_assign_expr(name, value),
+            Expr::Logical { left, operator, right } => self.visit_logical_expr(left, operator, right)
         }
     }
 }

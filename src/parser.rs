@@ -59,9 +59,9 @@ impl Parser {
         } else if self.match_token(vec![TokenType::LeftBrace]) {
             return Ok(Stmt::Block {
                 statements: self.block().unwrap_or(vec![]),
-            })
+            });
         }
-        
+
         self.expression_stmt()
     }
 
@@ -128,7 +128,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.match_token(vec![TokenType::Equal]) {
             let equals = self.previous();
@@ -142,6 +142,40 @@ impl Parser {
             }
 
             return Err(self.error(equals, "Invalid assignment target."));
+        }
+
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr> {
+        let mut expr = self.and()?;
+
+        while self.match_token(vec![TokenType::Or]) {
+            let operator = self.previous();
+            let right = self.and()?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            };
+            return Ok(expr);
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr> {
+        let mut expr = self.equality()?;
+
+        while self.match_token(vec![TokenType::And]) {
+            let operator = self.previous();
+            let right = self.and()?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            };
+            return Ok(expr);
         }
 
         Ok(expr)

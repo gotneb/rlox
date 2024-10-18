@@ -1,7 +1,7 @@
-var nome = "Fulano";
+var nome = "Gabriel";
 
-if (nome == "Gabriel") {
+if (nome == "Gabriel" or nome == "Admin") {
     print "Oi, " + nome + "!";
 } else {
-    print "Seu nome não é Gabriel!";
+    print "Você não é o admin!";
 }
