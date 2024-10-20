@@ -79,7 +79,7 @@ impl Interpreter {
 
                 number
             }
-            Value::String(string) => format!("\"{}\"", string),
+            Value::String(string) => string.clone(),
             Value::Boolean(value) => value.to_string(),
         }
     }
