@@ -2,20 +2,20 @@
 
 var case = false or false;
 if (case) {
-    print "false or false"; print case;
+    print("false or false"); print (case);
 }
 
 case = false or true; 
 if (case) {
-    print "false or true:"; print case;
+    print("false or true:"); print(case);
 }
 
 case = true or false;
 if (case) {
-    print "true or false"; print case;
+    print("true or false"); print(case);
 }
 
 case = true or true;
 if (case) {
-    print "true or true"; print case;
+    print("true or true"); print(case);
 }

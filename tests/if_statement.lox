@@ -1,7 +1,7 @@
 var nome = "Gabriel";
 
 if (nome == "Gabriel" or nome == "Admin") {
-    print "Oi, " + nome + "!";
+    print("Oi, " + nome + "!");
 } else {
-    print "Você não é o admin!";
+    print("Você não é o admin!");
 }
