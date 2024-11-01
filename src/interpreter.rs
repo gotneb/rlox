@@ -1,5 +1,6 @@
 use crate::{
     environment::{EnvRef, Environment},
+    impls::callable::Callable,
     syntax::{
         expr::{self, Expr},
         stmt::{self, Stmt},
@@ -81,6 +82,7 @@ impl Interpreter {
             }
             Value::String(string) => string.clone(),
             Value::Boolean(value) => value.to_string(),
+            Value::Function(_) => todo!(),
         }
     }
 
@@ -203,6 +205,24 @@ impl Interpreter {
         }
     }
 
+    fn visit_call_expr(&mut self, callee: &Expr, paren: &Token, args: &Vec<Expr>) -> Result<Value> {
+        let callee = self.evaluate(callee)?;
+
+        let mut evaluated_args = vec![];
+
+        for arg in args {
+            evaluated_args.push(self.evaluate(arg)?);
+        }
+
+        match callee {
+            Value::Function(callee) => callee.call(self, evaluated_args),
+            _ => Exception::runtime_error(
+                paren.clone(),
+                "Can only call functions and classes.".into(),
+            ),
+        }
+    }
+
     fn visit_literal_expr(&self, expr: &Literal) -> Value {
         match expr {
             Literal::String(value) => Value::String(value.clone()),
@@ -309,6 +329,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 operator,
                 right,
             } => self.visit_logical_expr(left, operator, right),
+            Expr::Call { callee, paren, arguments } => self.visit_call_expr(callee, paren, arguments)
         }
     }
 }

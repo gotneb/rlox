@@ -43,6 +43,7 @@ impl Visitor<String> for AstPrinter {
             Expr::Variable { name: _ } => todo!(),
             Expr::Assign { name: _, value: _ } => todo!(),
             Expr::Logical { left: _, operator: _, right: _ } => todo!(),
+            Expr::Call { callee: _, paren: _, arguments: _ } => todo!(),
         }
     }
 }
