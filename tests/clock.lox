@@ -1,0 +1,11 @@
+var before = clock();
+
+for (var i = 0; i < 100000; i = i + 1) {
+    
+}
+
+var now = clock();
+
+// It reaaaaally sucks having to write like this
+print("Time elapised (ms): ");
+print(now - before);

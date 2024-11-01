@@ -9,4 +9,4 @@ pub enum Value {
     Function(Function),
     NativeFunction(NativeFunction),
     Nil,
-} 
+}

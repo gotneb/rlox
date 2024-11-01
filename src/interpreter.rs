@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use crate::{
     environment::{EnvRef, Environment},
     impls::{callable::Callable, function::NativeFunction},
@@ -20,9 +22,9 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let global = Environment::new_global();
+        let globals = Environment::new_global();
 
-        global.borrow_mut().define(
+        globals.borrow_mut().define(
             "print".into(),
             Value::NativeFunction(NativeFunction {
                 arity: 1,
@@ -35,9 +37,20 @@ impl Interpreter {
             }),
         );
 
+        globals.borrow_mut().define(
+            "clock".into(),
+            Value::NativeFunction(NativeFunction {
+                arity: 0,
+                callable: |_, _| {
+                    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+                    Value::Number(timestamp.as_millis() as f64)
+                },
+            }),
+        );
+
         Self {
-            globals: global.clone(),
-            env: global.clone(),
+            env: globals.clone(),
+            globals,
         }
     }
 
@@ -228,8 +241,9 @@ impl Interpreter {
 
         match callee {
             Value::Function(callee) => {
+                callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
-            },
+            }
             Value::NativeFunction(callee) => {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
