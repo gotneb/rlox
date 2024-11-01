@@ -4,6 +4,7 @@ mod parser;
 mod scanner;
 mod syntax;
 mod utils;
+mod impls;
 
 use std::{
     fs,
