@@ -26,7 +26,12 @@ impl Interpreter {
             "print".into(),
             Value::NativeFunction(NativeFunction {
                 arity: 1,
-                callable: |_, args| args.get(0).unwrap().clone(),
+                callable: |_, args| {
+                    let value = args.get(0).unwrap().clone();
+                    let value = Interpreter::stringfy(&value);
+                    println!("{}", value);
+                    Value::Nil
+                },
             }),
         );
 
