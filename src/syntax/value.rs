@@ -1,4 +1,4 @@
-use crate::impls::function::Function;
+use crate::impls::function::{Function, NativeFunction};
 
 /// Represents all possibles values in the language
 #[derive(Debug, Clone)]
@@ -7,5 +7,6 @@ pub enum Value {
     Number(f64),
     String(String),
     Function(Function),
+    NativeFunction(NativeFunction),
     Nil,
 } 
