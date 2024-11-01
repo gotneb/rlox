@@ -86,12 +86,6 @@ impl Interpreter {
         }
     }
 
-    fn visit_print_stmt(&mut self, expr: &Expr) -> Result<()> {
-        let value = self.evaluate(expr)?;
-        println!("{}", Interpreter::stringfy(&value));
-        Ok(())
-    }
-
     fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<()> {
         let mut value = Value::Nil;
 
@@ -295,7 +289,6 @@ impl Interpreter {
 impl stmt::Visitor<Result<()>> for Interpreter {
     fn visit_stmt(&mut self, stmt: &Stmt) -> Result<()> {
         match stmt {
-            Stmt::Print(expr) => self.visit_print_stmt(expr),
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => {

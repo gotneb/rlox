@@ -55,9 +55,6 @@ impl Parser {
         if self.match_token(vec![TokenType::If]) {
             return self.if_statement();
         }
-        if self.match_token(vec![TokenType::Print]) {
-            return self.print_stmt();
-        }
         if self.match_token(vec![TokenType::While]) {
             return self.while_stmt();
         }
@@ -89,12 +86,6 @@ impl Parser {
             then_branch: Box::new(then_branch),
             else_branch,
         })
-    }
-
-    fn print_stmt(&mut self) -> Result<Stmt> {
-        let expr = self.expression()?;
-        self.consume(TokenType::Semicolon, "Expected ';' after value.")?;
-        Ok(Stmt::Print(expr))
     }
 
     fn var_declaration(&mut self) -> Result<Stmt> {

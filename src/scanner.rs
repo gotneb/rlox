@@ -264,7 +264,6 @@ impl Scanner {
         hash.insert("if".into(), TokenType::If);
         hash.insert("nil".into(), TokenType::Nil);
         hash.insert("or".into(), TokenType::Or);
-        hash.insert("print".into(), TokenType::Print);
         hash.insert("return".into(), TokenType::Return);
         hash.insert("super".into(), TokenType::Super);
         hash.insert("this".into(), TokenType::This);

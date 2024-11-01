@@ -7,7 +7,6 @@ pub trait Visitor<T> {
 #[derive(Debug)]
 pub enum Stmt {
     Expression(Expr),
-    Print(Expr),
     Var {
         name: Token,
         initializer: Option<Expr>,
