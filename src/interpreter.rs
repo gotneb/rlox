@@ -1,6 +1,6 @@
 use crate::{
     environment::{EnvRef, Environment},
-    impls::callable::Callable,
+    impls::{callable::Callable, function::NativeFunction},
     syntax::{
         expr::{self, Expr},
         stmt::{self, Stmt},
@@ -14,13 +14,25 @@ use crate::{
 type Result<T> = std::result::Result<T, Exception>;
 
 pub struct Interpreter {
+    globals: EnvRef,
     env: EnvRef,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
+        let global = Environment::new_global();
+
+        global.borrow_mut().define(
+            "print".into(),
+            Value::NativeFunction(NativeFunction {
+                arity: 1,
+                callable: |_, args| args.get(0).unwrap().clone(),
+            }),
+        );
+
         Self {
-            env: Environment::new_global(),
+            globals: global.clone(),
+            env: global.clone(),
         }
     }
 
@@ -82,7 +94,8 @@ impl Interpreter {
             }
             Value::String(string) => string.clone(),
             Value::Boolean(value) => value.to_string(),
-            Value::Function(_) => todo!(),
+            Value::Function(_) => "<fn>".into(),
+            Value::NativeFunction(_) => "<native fn>".into(),
         }
     }
 
@@ -209,7 +222,13 @@ impl Interpreter {
         }
 
         match callee {
-            Value::Function(callee) => callee.call(self, evaluated_args),
+            Value::Function(callee) => {
+                callee.call(self, evaluated_args)
+            },
+            Value::NativeFunction(callee) => {
+                callee.check_arity(evaluated_args.len(), paren)?;
+                callee.call(self, evaluated_args)
+            }
             _ => Exception::runtime_error(
                 paren.clone(),
                 "Can only call functions and classes.".into(),
@@ -322,7 +341,11 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 operator,
                 right,
             } => self.visit_logical_expr(left, operator, right),
-            Expr::Call { callee, paren, arguments } => self.visit_call_expr(callee, paren, arguments)
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => self.visit_call_expr(callee, paren, arguments),
         }
     }
 }

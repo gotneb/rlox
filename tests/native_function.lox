@@ -1,0 +1,4 @@
+print("Hello");
+print(20);
+
+print(20, "Hello");
