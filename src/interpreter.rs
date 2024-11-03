@@ -115,7 +115,13 @@ impl Interpreter {
             }
             Value::String(string) => string.clone(),
             Value::Boolean(value) => value.to_string(),
-            Value::Function(_) => "<fn>".into(),
+            Value::Function(f) => {
+                if let Stmt::Function { name, .. } = &f.declaration {
+                    return format!("<fn {}>", name.lexeme)
+                }
+                // In theory, it must never happen!
+                "<unknown function>".into()
+            },
             Value::NativeFunction(_) => "<native fn>".into(),
         }
     }
