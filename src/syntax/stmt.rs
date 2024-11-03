@@ -4,7 +4,7 @@ pub trait Visitor<T> {
     fn visit_stmt(&mut self, stmt: &Stmt) -> T;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Stmt {
     Expression(Expr),
     Var {
@@ -21,6 +21,11 @@ pub enum Stmt {
     },
     While {
         condition: Expr,
-        body: Box<Stmt>
-    }
+        body: Box<Stmt>,
+    },
+    Function {
+        name: Token,
+        parameters: Vec<Token>,
+        body: Vec<Stmt>,
+    },
 }

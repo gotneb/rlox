@@ -1,4 +1,9 @@
-use crate::{interpreter::Interpreter, syntax::value::Value, Exception};
+use crate::{
+    environment::Environment,
+    interpreter::Interpreter,
+    syntax::{stmt::Stmt, value::Value},
+    Exception,
+};
 
 use super::callable::Callable;
 
@@ -9,7 +14,9 @@ pub struct NativeFunction {
 }
 
 #[derive(Debug, Clone)]
-pub struct Function;
+pub struct Function {
+    pub declaration: Stmt,
+}
 
 impl Callable for NativeFunction {
     fn arity(&self) -> usize {
@@ -27,7 +34,10 @@ impl Callable for NativeFunction {
 
 impl Callable for Function {
     fn arity(&self) -> usize {
-        todo!()
+        if let Stmt::Function { parameters, .. } = &self.declaration {
+            return parameters.len();
+        }
+        panic!("Function was not initalized with a function declaration!");
     }
 
     fn call(
@@ -35,6 +45,19 @@ impl Callable for Function {
         interpreter: &mut Interpreter,
         arguments: Vec<Value>,
     ) -> Result<Value, Exception> {
-        todo!()
+        let env = Environment::new_local(&interpreter.globals);
+
+        if let Stmt::Function {
+            parameters, body, ..
+        } = &self.declaration
+        {
+            for (i, value) in arguments.iter().enumerate() {
+                env.borrow_mut()
+                    .define(parameters.get(i).unwrap().lexeme.clone(), value.clone());
+            }
+            interpreter.execute_block(body, env)?;
+        }
+
+        Ok(Value::Nil)
     }
 }

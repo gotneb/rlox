@@ -2,7 +2,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
     environment::{EnvRef, Environment},
-    impls::{callable::Callable, function::NativeFunction},
+    impls::{
+        callable::Callable,
+        function::{Function, NativeFunction},
+    },
     syntax::{
         expr::{self, Expr},
         stmt::{self, Stmt},
@@ -16,7 +19,7 @@ use crate::{
 type Result<T> = std::result::Result<T, Exception>;
 
 pub struct Interpreter {
-    globals: EnvRef,
+    pub globals: EnvRef,
     env: EnvRef,
 }
 
@@ -70,7 +73,7 @@ impl Interpreter {
         stmt::Visitor::visit_stmt(self, stmt)
     }
 
-    fn execute_block(&mut self, statements: &Vec<Stmt>, env: EnvRef) -> Result<()> {
+    pub fn execute_block(&mut self, statements: &Vec<Stmt>, env: EnvRef) -> Result<()> {
         let previous = self.env.clone();
 
         self.env = env;
@@ -145,6 +148,17 @@ impl Interpreter {
 
     fn visit_expression_stmt(&mut self, expr: &Expr) -> Result<()> {
         self.evaluate(expr)?;
+        Ok(())
+    }
+
+    fn visit_function_stmt(&mut self, name: &Token, function_stmt: &Stmt) -> Result<()> {
+        let function = Function {
+            declaration: function_stmt.clone(),
+        };
+        self.env
+            .borrow_mut()
+            .define(name.lexeme.clone(), Value::Function(function));
+
         Ok(())
     }
 
@@ -338,6 +352,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 else_branch,
             } => self.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
+            Stmt::Function { name, .. } => self.visit_function_stmt(name, stmt),
         }
     }
 }
