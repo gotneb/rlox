@@ -1,0 +1,16 @@
+var name = "Gabriel";
+
+fun make_counter() {
+    var i = 0;
+    fun count() {
+        i = i + 1;
+        print(i);
+        print(name);
+    }
+
+    return count;
+}
+
+var counter = make_counter();
+counter();
+counter();

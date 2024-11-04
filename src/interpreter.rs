@@ -161,6 +161,7 @@ impl Interpreter {
     fn visit_function_stmt(&mut self, name: &Token, function_stmt: &Stmt) -> Result<()> {
         let function = Function {
             declaration: function_stmt.clone(),
+            closure: self.env.clone(),
         };
         self.env
             .borrow_mut()

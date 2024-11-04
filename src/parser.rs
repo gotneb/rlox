@@ -99,7 +99,7 @@ impl Parser {
         if !self.check(TokenType::Semicolon) {
             value = Some(self.expression()?); 
         };
-        self.consume(TokenType::Semicolon, "Expected ';' after expression")?;
+        self.consume(TokenType::Semicolon, "Expected ';' after return vale.")?;
         
         Ok(Stmt::Return { keyword, value })
     }

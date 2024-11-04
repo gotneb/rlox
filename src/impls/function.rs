@@ -1,5 +1,5 @@
 use crate::{
-    environment::Environment,
+    environment::{EnvRef, Environment},
     interpreter::Interpreter,
     syntax::{stmt::Stmt, value::Value},
     Exception,
@@ -16,6 +16,7 @@ pub struct NativeFunction {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub declaration: Stmt,
+    pub closure: EnvRef,
 }
 
 impl Callable for NativeFunction {
@@ -45,7 +46,7 @@ impl Callable for Function {
         interpreter: &mut Interpreter,
         arguments: Vec<Value>,
     ) -> Result<Value, Exception> {
-        let env = Environment::new_local(&interpreter.globals);
+        let env = Environment::new_local(&self.closure);
 
         if let Stmt::Function {
             parameters, body, ..

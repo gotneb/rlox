@@ -8,6 +8,7 @@ use crate::{
 pub type EnvRef = Rc<RefCell<Environment>>;
 type Result<T> = std::result::Result<T, Exception>;
 
+#[derive(Debug)]
 pub struct Environment {
     pub enclosing: Option<EnvRef>,
     values: HashMap<String, Value>,
