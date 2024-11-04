@@ -15,13 +15,14 @@ use std::{
 use interpreter::Interpreter;
 use parser::Parser;
 use scanner::Scanner;
-use syntax::{token::Token, token_type::TokenType};
+use syntax::{token::Token, token_type::TokenType, value::Value};
 
 static mut HAD_ERROR: bool = false;
 static mut HAD_RUNTIME_ERROR: bool = false;
 
 enum Exception {
     RuntimeError(RuntimeError),
+    Return(Value),
 }
 
 impl Exception {

@@ -1,0 +1,22 @@
+fun sum(a, b) {
+    return a + 2;
+}
+
+fun fib(n) {
+    if (n <= 1) return n;
+    return fib(n-2) + fib(n-1);
+}
+
+print("Sum 1+2 = " + sum(1, 2));
+
+
+var before = clock();
+
+for (var i = 1; i <= 25; i = i + 1) {
+    print("Fib(" + i + ") = " + fib(i));
+}
+
+var after = clock();
+
+var time = after - before;
+print("Time spent: " + time + "ms");

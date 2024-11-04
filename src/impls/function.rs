@@ -55,7 +55,13 @@ impl Callable for Function {
                 env.borrow_mut()
                     .define(parameters.get(i).unwrap().lexeme.clone(), value.clone());
             }
-            interpreter.execute_block(body, env)?;
+
+            if let Err(e) = interpreter.execute_block(body, env) {
+                return match e {
+                    Exception::RuntimeError(e) => Err(Exception::RuntimeError(e)),
+                    Exception::Return(value) => Ok(value),
+                };
+            }
         }
 
         Ok(Value::Nil)

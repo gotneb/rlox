@@ -64,6 +64,7 @@ impl Interpreter {
                 Ok(_) => (),
                 Err(e) => match e {
                     Exception::RuntimeError(e) => e.error(),
+                    Exception::Return(_) => panic!("Return statement not handled!"),
                 },
             }
         }
@@ -117,11 +118,11 @@ impl Interpreter {
             Value::Boolean(value) => value.to_string(),
             Value::Function(f) => {
                 if let Stmt::Function { name, .. } = &f.declaration {
-                    return format!("<fn {}>", name.lexeme)
+                    return format!("<fn {}>", name.lexeme);
                 }
                 // In theory, it must never happen!
                 "<unknown function>".into()
-            },
+            }
             Value::NativeFunction(_) => "<native fn>".into(),
         }
     }
@@ -182,6 +183,13 @@ impl Interpreter {
             }
         }
         Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, value: &Option<Expr>) -> Result<()> {
+        match value {
+            Some(expr) => Err(Exception::Return(self.evaluate(expr)?)),
+            None => Err(Exception::Return(Value::Nil)),
+        }
     }
 
     fn visit_binary_expr(&mut self, left: &Expr, operator: &Token, right: &Expr) -> Result<Value> {
@@ -359,6 +367,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
             } => self.visit_if_stmt(condition, then_branch, else_branch),
             Stmt::While { condition, body } => self.visit_while_stmt(condition, body),
             Stmt::Function { name, .. } => self.visit_function_stmt(name, stmt),
+            Stmt::Return { value, .. } => self.visit_return_stmt(value),
         }
     }
 }

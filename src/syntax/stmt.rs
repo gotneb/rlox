@@ -28,4 +28,8 @@ pub enum Stmt {
         parameters: Vec<Token>,
         body: Vec<Stmt>,
     },
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
+    }
 }
