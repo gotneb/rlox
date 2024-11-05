@@ -1,4 +1,4 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{collections::HashMap, time::{SystemTime, UNIX_EPOCH}};
 
 use crate::{
     environment::{EnvRef, Environment},
@@ -20,6 +20,7 @@ type Result<T> = std::result::Result<T, Exception>;
 
 pub struct Interpreter {
     pub globals: EnvRef,
+    locals: HashMap<Expr, usize>,
     env: EnvRef,
 }
 
@@ -54,6 +55,7 @@ impl Interpreter {
         Self {
             env: globals.clone(),
             globals,
+            locals: HashMap::new()
         }
     }
 
@@ -72,6 +74,10 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<()> {
         stmt::Visitor::visit_stmt(self, stmt)
+    }
+
+    pub fn resolve(&mut self, expr: &Expr, depth: usize) {
+        // self.locals.insert(expr.clone(), depth);
     }
 
     pub fn execute_block(&mut self, statements: &Vec<Stmt>, env: EnvRef) -> Result<()> {
