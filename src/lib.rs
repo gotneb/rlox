@@ -104,10 +104,17 @@ fn run(source: String, interpreter: &mut Interpreter) {
 
     let mut parser = Parser::new(tokens);
     let mut resolver = Resolver::new(interpreter);
-    
+
     match parser.parse() {
         Ok(statements) => {
             resolver.resolve_block(&statements);
+
+            unsafe {
+                if HAD_RUNTIME_ERROR {
+                    return;
+                }
+            }
+
             interpreter.interpret(statements);
         },
         Err(_) => (),

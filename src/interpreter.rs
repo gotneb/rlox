@@ -69,7 +69,8 @@ impl Interpreter {
                 Ok(_) => (),
                 Err(e) => match e {
                     Exception::RuntimeError(e) => e.error(),
-                    Exception::Return(_) => panic!("Return statement not handled!"),
+                    // This edge case (`return` keyword on top level code) is handled by the Resolver.
+                    Exception::Return(_) => (),
                 },
             }
         }

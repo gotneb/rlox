@@ -8,11 +8,19 @@ use crate::{
         stmt::{self, Stmt},
         token::Token,
     },
+    RuntimeError,
 };
+
+#[derive(Clone, Copy)]
+enum FunctionType {
+    Function,
+    None,
+}
 
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
+    current_function: FunctionType,
 }
 
 impl Resolver<'_> {
@@ -20,6 +28,7 @@ impl Resolver<'_> {
         Resolver {
             interpreter,
             scopes: vec![],
+            current_function: FunctionType::None,
         }
     }
 
@@ -37,6 +46,13 @@ impl Resolver<'_> {
         }
 
         let scope = self.peek_scopes();
+        if scope.contains_key(&name.lexeme) {
+            RuntimeError {
+                token: name.clone(),
+                message: "Already a variable with this name in this scope.".into(),
+            }
+            .error();
+        }
         scope.insert(name.lexeme.clone(), false);
     }
 
@@ -63,7 +79,10 @@ impl Resolver<'_> {
         }
     }
 
-    fn resolve_function(&mut self, parameters: &Vec<Token>, body: &Vec<Stmt>) {
+    fn resolve_function(&mut self, parameters: &Vec<Token>, body: &Vec<Stmt>, _type_: FunctionType) {
+        let enclosing = self.current_function;
+        self.current_function = _type_;
+
         self.begin_scope();
         for param in parameters {
             self.declare(param);
@@ -71,6 +90,8 @@ impl Resolver<'_> {
         }
         self.resolve_block(body);
         self.end_scope();
+
+        self.current_function = enclosing;
     }
 
     fn resolve_local(&mut self, expr: &Expr, name: &Token) {
@@ -97,7 +118,7 @@ impl Resolver<'_> {
         self.declare(name);
         self.define(name);
 
-        self.resolve_function(parameters, body);
+        self.resolve_function(parameters, body, FunctionType::Function);
     }
 
     fn visit_if_stmt(
@@ -113,7 +134,13 @@ impl Resolver<'_> {
         }
     }
 
-    fn visit_return_stmt(&mut self, name: &Token, value: &Option<Expr>) {
+    fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) {
+        if let FunctionType::None = self.current_function {
+            RuntimeError{
+                token: keyword.clone(),
+                message: "Can't return from a top-level code.".into(),
+            }.error();
+        }
         if let Some(value) = value {
             self.resolve_expr(value);
         }
