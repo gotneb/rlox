@@ -79,7 +79,12 @@ impl Resolver<'_> {
         }
     }
 
-    fn resolve_function(&mut self, parameters: &Vec<Token>, body: &Vec<Stmt>, _type_: FunctionType) {
+    fn resolve_function(
+        &mut self,
+        parameters: &Vec<Token>,
+        body: &Vec<Stmt>,
+        _type_: FunctionType,
+    ) {
         let enclosing = self.current_function;
         self.current_function = _type_;
 
@@ -136,10 +141,11 @@ impl Resolver<'_> {
 
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) {
         if let FunctionType::None = self.current_function {
-            RuntimeError{
+            RuntimeError {
                 token: keyword.clone(),
                 message: "Can't return from a top-level code.".into(),
-            }.error();
+            }
+            .error();
         }
         if let Some(value) = value {
             self.resolve_expr(value);
