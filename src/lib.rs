@@ -103,8 +103,13 @@ fn run(source: String, interpreter: &mut Interpreter) {
     let tokens = scanner.scan_tokens();
 
     let mut parser = Parser::new(tokens);
+    let mut resolver = Resolver::new(interpreter);
+    
     match parser.parse() {
-        Ok(statements) => interpreter.interpret(statements),
+        Ok(statements) => {
+            resolver.resolve_block(&statements);
+            interpreter.interpret(statements);
+        },
         Err(_) => (),
     }
 }

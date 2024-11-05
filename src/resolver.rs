@@ -57,7 +57,7 @@ impl Resolver<'_> {
         expr::Visitor::visit_expr(self, expr);
     }
 
-    fn resolve_block(&mut self, statements: &Vec<Stmt>) {
+    pub fn resolve_block(&mut self, statements: &Vec<Stmt>) {
         for stmt in statements {
             self.resolve_stmt(stmt);
         }

@@ -157,9 +157,18 @@ impl Interpreter {
         Ok(())
     }
 
-    fn visit_assign_expr(&mut self, name: &Token, expr: &Expr) -> Result<Value> {
-        let value = self.evaluate(expr)?;
-        self.env.borrow_mut().assign(name, value)
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr, expr: &Expr) -> Result<Value> {
+        let value = self.evaluate(value)?;
+
+        let distance = self.locals.get(expr);
+        match distance {
+            Some(distance) => self.env.borrow_mut().assign_at(*distance, name, &value),
+            None => {
+                self.globals.borrow_mut().assign(name, value.clone())?;
+            }
+        };
+
+        Ok(value)
     }
 
     fn visit_expression_stmt(&mut self, expr: &Expr) -> Result<()> {
@@ -336,8 +345,19 @@ impl Interpreter {
         }
     }
 
-    fn visit_variable_expr(&self, name: &Token) -> Result<Value> {
-        self.env.borrow().get(name)
+    fn visit_variable_expr(&self, name: &Token, expr: &Expr) -> Result<Value> {
+        // self.env.borrow().get(name)
+        self.loopkup_variable(name, expr)
+    }
+
+    fn loopkup_variable(&self, name: &Token, expr: &Expr) -> Result<Value> {
+        let distance = self.locals.get(expr);
+
+        if let Some(distance) = distance {
+            self.env.borrow().get_at(*distance, &name.lexeme)
+        } else {
+            self.globals.borrow().get(name)
+        }
     }
 
     fn zero_division_error<T>(operator: &Token) -> Result<T> {
@@ -393,9 +413,11 @@ impl expr::Visitor<Result<Value>> for Interpreter {
             } => self.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression, .. } => self.evaluate(expression),
             Expr::Literal { value, .. } => Ok(self.visit_literal_expr(value)),
-            Expr::Unary { operator, right, .. } => self.visit_unary_expr(operator, right),
-            Expr::Variable { name, .. } => self.visit_variable_expr(name),
-            Expr::Assign { name, value, .. } => self.visit_assign_expr(name, value),
+            Expr::Unary {
+                operator, right, ..
+            } => self.visit_unary_expr(operator, right),
+            Expr::Variable { name, .. } => self.visit_variable_expr(name, expr),
+            Expr::Assign { name, value, .. } => self.visit_assign_expr(name, value, expr),
             Expr::Logical {
                 left,
                 operator,

@@ -33,6 +33,32 @@ impl Environment {
         self.values.insert(name, value);
     }
 
+    pub fn get_at(&self, distance: usize, name: &String) -> Result<Value> {
+        if distance == 0 {
+            return Ok(self.values.get(name).unwrap().clone());
+        }
+
+        if let Some(enclosing) = &self.enclosing {
+            return enclosing.borrow().get_at(distance - 1, name);
+        }
+
+        panic!("Could not find local scope that variable belongs to!")
+    }
+
+    pub fn assign_at(&mut self, distance: usize, name: &Token, value: &Value) {
+        if distance == 0 {
+            self.values.insert(name.lexeme.clone(), value.clone());
+            return;
+        }
+
+        if let Some(enclosing) = &self.enclosing {
+            enclosing.borrow_mut().assign_at(distance - 1, name, value);
+            return;
+        }
+
+        panic!("Could not find local scope that variable belongs to!")
+    }
+
     pub fn get(&self, name: &Token) -> Result<Value> {
         match self.values.get(&name.lexeme) {
             Some(value) => Ok(value.clone()),
