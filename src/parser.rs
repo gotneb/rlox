@@ -5,7 +5,7 @@ use crate::{
         stmt::Stmt,
         token::{Literal, Token},
         token_type::TokenType,
-    },
+    }, utils::id_factory::new_uid,
 };
 
 #[derive(Debug)]
@@ -163,6 +163,7 @@ impl Parser {
 
         if let None = condition {
             condition = Some(Expr::Literal {
+                uid: new_uid(),
                 value: Literal::Bool(true),
             })
         }
@@ -252,6 +253,7 @@ impl Parser {
 
             if let Expr::Variable { name, .. } = expr {
                 return Ok(Expr::Assign {
+                    uid: new_uid(),
                     name,
                     value: Box::new(value),
                 });
@@ -270,6 +272,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.and()?;
             expr = Expr::Logical {
+                uid: new_uid(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -287,6 +290,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.and()?;
             expr = Expr::Logical {
+                uid: new_uid(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -303,6 +307,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.comparison()?;
             expr = Expr::Binary {
+                uid: new_uid(),
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -322,6 +327,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.term();
             expr = Ok(Expr::Binary {
+                uid: new_uid(),
                 left: Box::new(expr?),
                 operator,
                 right: Box::new(right?),
@@ -336,6 +342,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.factor();
             expr = Ok(Expr::Binary {
+                uid: new_uid(),
                 left: Box::new(expr?),
                 operator,
                 right: Box::new(right?),
@@ -350,6 +357,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.unary();
             expr = Ok(Expr::Binary {
+                uid: new_uid(),
                 left: Box::new(expr?),
                 operator,
                 right: Box::new(right?),
@@ -363,6 +371,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.unary()?;
             return Ok(Expr::Unary {
+                uid: new_uid(),
                 operator,
                 right: Box::new(right),
             });
@@ -391,6 +400,7 @@ impl Parser {
         let paren = self.consume(TokenType::RightParen, "Expected ')' after arguments.")?;
 
         Ok(Expr::Call {
+            uid: new_uid(),
             callee: Box::new(callee),
             paren,
             arguments: Box::new(args),
@@ -414,28 +424,33 @@ impl Parser {
     fn primary(&mut self) -> Result<Expr> {
         if self.match_token(vec![TokenType::False]) {
             return Ok(Expr::Literal {
+                uid: new_uid(),
                 value: Literal::Bool(false),
             });
         }
         if self.match_token(vec![TokenType::True]) {
             return Ok(Expr::Literal {
+                uid: new_uid(),
                 value: Literal::Bool(true),
             });
         }
         if self.match_token(vec![TokenType::Nil]) {
             return Ok(Expr::Literal {
+                uid: new_uid(),
                 value: Literal::None,
             });
         }
 
         if self.match_token(vec![TokenType::Number, TokenType::String]) {
             return Ok(Expr::Literal {
+                uid: new_uid(),
                 value: self.previous().literal,
             });
         }
 
         if self.match_token(vec![TokenType::Identifier]) {
             return Ok(Expr::Variable {
+                uid: new_uid(),
                 name: self.previous(),
             });
         }
@@ -444,6 +459,7 @@ impl Parser {
             let expr = self.expression();
             self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
             return Ok(Expr::Grouping {
+                uid: new_uid(),
                 expression: Box::new(expr?),
             });
         }

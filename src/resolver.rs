@@ -8,10 +8,7 @@ use crate::{
         stmt::{self, Stmt},
         token::Token,
     },
-    Exception,
 };
-
-type Result<T> = std::result::Result<T, Exception>;
 
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
@@ -212,11 +209,11 @@ impl expr::Visitor<()> for Resolver<'_> {
     fn visit_expr(&mut self, expression: &Expr) {
         match expression {
             Expr::Binary { left, right, .. } => self.visit_binary_expr(left, right),
-            Expr::Grouping { expression } => self.visit_grouping_expr(expression),
+            Expr::Grouping { expression, .. } => self.visit_grouping_expr(expression),
             Expr::Literal { .. } => self.visit_literal_expr(),
             Expr::Unary { right, .. } => self.visit_unary_expr(right),
-            Expr::Variable { name } => self.visit_var_expr(expression, name),
-            Expr::Assign { name, value } => self.visit_assign_expr(expression, name, value),
+            Expr::Variable { name, .. } => self.visit_var_expr(expression, name),
+            Expr::Assign { name, value, .. } => self.visit_assign_expr(expression, name, value),
             Expr::Logical { left, right, .. } => self.visit_logical_expr(left, right),
             Expr::Call {
                 callee, arguments, ..

@@ -1,4 +1,7 @@
-use std::{collections::HashMap, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::HashMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{
     environment::{EnvRef, Environment},
@@ -55,7 +58,7 @@ impl Interpreter {
         Self {
             env: globals.clone(),
             globals,
-            locals: HashMap::new()
+            locals: HashMap::new(),
         }
     }
 
@@ -77,7 +80,7 @@ impl Interpreter {
     }
 
     pub fn resolve(&mut self, expr: &Expr, depth: usize) {
-        // self.locals.insert(expr.clone(), depth);
+        self.locals.insert(expr.clone(), depth);
     }
 
     pub fn execute_block(&mut self, statements: &Vec<Stmt>, env: EnvRef) -> Result<()> {
@@ -386,21 +389,24 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 left,
                 operator,
                 right,
+                ..
             } => self.visit_binary_expr(left, operator, right),
-            Expr::Grouping { expression } => self.evaluate(expression),
-            Expr::Literal { value } => Ok(self.visit_literal_expr(value)),
-            Expr::Unary { operator, right } => self.visit_unary_expr(operator, right),
-            Expr::Variable { name } => self.visit_variable_expr(name),
-            Expr::Assign { name, value } => self.visit_assign_expr(name, value),
+            Expr::Grouping { expression, .. } => self.evaluate(expression),
+            Expr::Literal { value, .. } => Ok(self.visit_literal_expr(value)),
+            Expr::Unary { operator, right, .. } => self.visit_unary_expr(operator, right),
+            Expr::Variable { name, .. } => self.visit_variable_expr(name),
+            Expr::Assign { name, value, .. } => self.visit_assign_expr(name, value),
             Expr::Logical {
                 left,
                 operator,
                 right,
+                ..
             } => self.visit_logical_expr(left, operator, right),
             Expr::Call {
                 callee,
                 paren,
                 arguments,
+                ..
             } => self.visit_call_expr(callee, paren, arguments),
         }
     }
