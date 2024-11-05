@@ -5,3 +5,12 @@ version = 3
 [[package]]
 name = "rlox"
 version = "0.1.0"
+dependencies = [
+ "uid",
+]
+
+[[package]]
+name = "uid"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7041bb797d82c5728d3a4a40432809095d8acc59bdd9e67426a2529b3b80c9be"

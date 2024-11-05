@@ -7,3 +7,4 @@ description = "A Tree-Walk interpreter for Lox language written in Rust."
 repository = "https://github.com/gotneb/rlox"
 
 [dependencies]
+uid = "0.1.8"

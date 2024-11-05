@@ -1,10 +1,11 @@
 mod environment;
+mod impls;
 mod interpreter;
 mod parser;
+mod resolver;
 mod scanner;
 mod syntax;
 mod utils;
-mod impls;
 
 use std::{
     fs,
@@ -14,6 +15,7 @@ use std::{
 
 use interpreter::Interpreter;
 use parser::Parser;
+use resolver::Resolver;
 use scanner::Scanner;
 use syntax::{token::Token, token_type::TokenType, value::Value};
 
