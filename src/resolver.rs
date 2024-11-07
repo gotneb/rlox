@@ -17,9 +17,25 @@ enum FunctionType {
     None,
 }
 
+struct State {
+    pub is_ready: bool,
+    pub is_used: bool,
+    pub token: Token,
+}
+
+impl State {
+    fn new(is_ready: bool, is_used: bool, token: Token) -> State {
+        State {
+            is_ready,
+            is_used,
+            token,
+        }
+    }
+}
+
 pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
-    scopes: Vec<HashMap<String, bool>>,
+    scopes: Vec<HashMap<String, State>>,
     current_function: FunctionType,
 }
 
@@ -37,6 +53,15 @@ impl Resolver<'_> {
     }
 
     fn end_scope(&mut self) {
+        for (name, value) in self.scopes.last().unwrap() {
+            if !value.is_used {
+                RuntimeError {
+                    message: format!("Local variable `{}` is never read.", name),
+                    token: value.token.clone(),
+                }
+                .error();
+            }
+        }
         self.scopes.pop();
     }
 
@@ -53,7 +78,7 @@ impl Resolver<'_> {
             }
             .error();
         }
-        scope.insert(name.lexeme.clone(), false);
+        scope.insert(name.lexeme.clone(), State::new(false, false, name.clone()));
     }
 
     fn define(&mut self, name: &Token) {
@@ -62,7 +87,13 @@ impl Resolver<'_> {
         }
 
         let scope = self.peek_scopes();
-        scope.insert(name.lexeme.clone(), true);
+        match scope.get(&name.lexeme) {
+            Some(State { is_used, .. }) => scope.insert(
+                name.lexeme.clone(),
+                State::new(true, *is_used, name.clone()),
+            ),
+            None => scope.insert(name.lexeme.clone(), State::new(true, false, name.clone())),
+        };
     }
 
     fn resolve_stmt(&mut self, stmt: &Stmt) {
@@ -168,6 +199,13 @@ impl Resolver<'_> {
     }
 
     fn visit_assign_expr(&mut self, var_expr: &Expr, name: &Token, value: &Expr) {
+        for i in (0..self.scopes.len()).rev() {
+            if let Some(state) = self.scopes[i].get_mut(&name.lexeme) {
+                state.is_used = true;
+                break;
+            }
+        }
+
         self.resolve_expr(value);
         self.resolve_local(var_expr, name);
     }
@@ -200,16 +238,19 @@ impl Resolver<'_> {
     }
 
     fn visit_var_expr(&mut self, expr: &Expr, name: &Token) {
-        if let Some(scope) = self.scopes.last() {
-            if let Some(false) = scope.get(&name.lexeme) {
-                print_error(name, "Can't read local variable in its own initializer.")
+        if let Some(scope) = self.scopes.last_mut() {
+            if let Some(state) = scope.get_mut(&name.lexeme) {
+                state.is_used = true;
+                if !state.is_ready {
+                    print_error(name, "Can't read local variable in its own initializer.")
+                }
             }
         }
 
         self.resolve_local(expr, name);
     }
 
-    fn peek_scopes(&mut self) -> &mut HashMap<String, bool> {
+    fn peek_scopes(&mut self) -> &mut HashMap<String, State> {
         self.scopes
             .last_mut()
             .expect("Scope's stack must not be empty!")

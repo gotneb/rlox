@@ -1,0 +1,9 @@
+fun do_nothing() {
+    // Local ones should be used
+    var something_else = "Never used.";
+    print(something_else);
+}
+
+var global_one = "Global never used. (it's allowed by the language)";
+
+do_nothing();
