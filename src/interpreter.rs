@@ -319,6 +319,14 @@ impl Interpreter {
         }
     }
 
+    fn visit_get_expr(&mut self, name: &Token, object: &Expr) -> Result<Value> {
+        let object = self.evaluate(object)?;
+        match object {
+            Value::ClassInstance(instance) => instance.get(name),
+            _ => Exception::runtime_error(name.clone(), "Only instances have property".into()),
+        }
+    }
+
     fn visit_literal_expr(&self, expr: &Literal) -> Value {
         match expr {
             Literal::String(value) => Value::String(value.clone()),
@@ -448,6 +456,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 arguments,
                 ..
             } => self.visit_call_expr(callee, paren, arguments),
+            Expr::Get { name, object, .. } => self.visit_get_expr(name, object),
         }
     }
 }

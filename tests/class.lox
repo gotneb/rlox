@@ -4,5 +4,8 @@ class Game {
     }
 }
 
-print(Game);
-print(Game());
+// print(Game);
+// print(Game());
+
+var g = Game();
+g.title.nanika;

@@ -62,6 +62,11 @@ pub enum Expr {
         paren: Token,
         arguments: Box<Vec<Expr>>,
     },
+    Get {
+        uid: Id,
+        name: Token,
+        object: Box<Expr>,
+    }
 }
 
 impl Expr {
@@ -75,6 +80,7 @@ impl Expr {
             Expr::Assign { uid, .. } => *uid,
             Expr::Logical { uid, .. } => *uid,
             Expr::Call { uid, .. } => *uid,
+            Expr::Get { uid, .. } => *uid,
         }
     }
 }

@@ -227,6 +227,10 @@ impl Resolver<'_> {
         }
     }
 
+    fn visit_get_expr(&mut self, expr: &Expr) {
+        self.resolve_expr(expr);
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Expr) {
         self.resolve_expr(expr);
     }
@@ -298,6 +302,7 @@ impl expr::Visitor<()> for Resolver<'_> {
             Expr::Call {
                 callee, arguments, ..
             } => self.visit_call_expr(callee, arguments),
+            Expr::Get { object, .. } => self.visit_get_expr(object),
         }
     }
 }
