@@ -148,6 +148,7 @@ impl Interpreter {
             }
             Value::NativeFunction(_) => "<native fn>".into(),
             Value::Class(class) => class.to_string(),
+            Value::ClassInstance(class_instance) => class_instance.to_string(),
         }
     }
 
@@ -310,6 +311,7 @@ impl Interpreter {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
             }
+            Value::Class(callee) => callee.call(self, vec![]),
             _ => Exception::runtime_error(
                 paren.clone(),
                 "Can only call functions and classes.".into(),
