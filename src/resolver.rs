@@ -146,6 +146,11 @@ impl Resolver<'_> {
         self.end_scope();
     }
 
+    fn visit_class_stmt(&mut self, name: &Token) {
+        self.declare(name);
+        self.define(name);
+    }
+
     fn visit_expression_stmt(&mut self, expr: &Expr) {
         self.resolve_expr(expr);
     }
@@ -261,6 +266,7 @@ impl stmt::Visitor<()> for Resolver<'_> {
     fn visit_stmt(&mut self, stmt: &Stmt) {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
+            Stmt::Class { name, .. } => self.visit_class_stmt(name),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => self.visit_block_stmt(statements),
             Stmt::If {

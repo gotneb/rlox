@@ -5,7 +5,8 @@ use crate::{
         stmt::Stmt,
         token::{Literal, Token},
         token_type::TokenType,
-    }, utils::id_factory::new_uid,
+    },
+    utils::id_factory::new_uid,
 };
 
 #[derive(Debug)]
@@ -40,6 +41,8 @@ impl Parser {
             self.var_declaration()
         } else if self.match_token(vec![TokenType::Fun]) {
             self.function("function".into())
+        } else if self.match_token(vec![TokenType::Class]) {
+            self.class_declaration()
         } else {
             self.statement()
         };
@@ -51,6 +54,20 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt> {
+        let name = self.consume(TokenType::Identifier, "Expected a class name.")?;
+        self.consume(TokenType::LeftBrace, "Expected '{' before class body.")?;
+
+        let mut methods = vec![];
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            methods.push(self.function("method".into())?);
+        }
+
+        self.consume(TokenType::RightBrace, "Expected '}' after class body")?;
+
+        Ok(Stmt::Class { name, methods })
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -97,10 +114,10 @@ impl Parser {
         let keyword = self.previous();
         let mut value = None;
         if !self.check(TokenType::Semicolon) {
-            value = Some(self.expression()?); 
+            value = Some(self.expression()?);
         };
         self.consume(TokenType::Semicolon, "Expected ';' after return vale.")?;
-        
+
         Ok(Stmt::Return { keyword, value })
     }
 
@@ -224,7 +241,11 @@ impl Parser {
 
         let body = self.block()?;
 
-        Ok(Stmt::Function { name, parameters, body })
+        Ok(Stmt::Function {
+            name,
+            parameters,
+            body,
+        })
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>> {

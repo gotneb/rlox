@@ -7,6 +7,7 @@ use crate::{
     environment::{EnvRef, Environment},
     impls::{
         callable::Callable,
+        class::Class,
         function::{Function, NativeFunction},
     },
     syntax::{
@@ -99,6 +100,18 @@ impl Interpreter {
         Ok(())
     }
 
+    fn visit_class_stmt(&mut self, name: &Token) -> Result<()> {
+        self.env
+            .borrow_mut()
+            .define(name.lexeme.clone(), Value::Nil);
+        let class = Class {
+            name: name.lexeme.clone(),
+        };
+        self.env.borrow_mut().assign(name, Value::Class(class))?;
+
+        Ok(())
+    }
+
     fn evaluate(&mut self, expr: &Expr) -> Result<Value> {
         expr::Visitor::visit_expr(self, expr)
     }
@@ -134,6 +147,7 @@ impl Interpreter {
                 "<unknown function>".into()
             }
             Value::NativeFunction(_) => "<native fn>".into(),
+            Value::Class(class) => class.to_string(),
         }
     }
 
@@ -387,6 +401,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
     fn visit_stmt(&mut self, stmt: &Stmt) -> Result<()> {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
+            Stmt::Class { name, .. } => self.visit_class_stmt(name),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => {
                 self.execute_block(statements, Environment::new_local(&self.env))
