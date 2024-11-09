@@ -8,4 +8,9 @@ class Game {
 // print(Game());
 
 var g = Game();
-g.title.nanika;
+print(g);
+g.title = "Shadow of Colossus";
+
+print("Game title: " + g.title);
+
+print(g.title.year);

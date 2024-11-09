@@ -242,6 +242,11 @@ impl Resolver<'_> {
         self.resolve_expr(right);
     }
 
+    fn visit_set_expr(&mut self, value: &Expr, object: &Expr) {
+        self.resolve_expr(value);
+        self.resolve_expr(object);
+    }
+
     fn visit_unary_expr(&mut self, right: &Expr) {
         self.visit_expr(right);
     }
@@ -303,6 +308,7 @@ impl expr::Visitor<()> for Resolver<'_> {
                 callee, arguments, ..
             } => self.visit_call_expr(callee, arguments),
             Expr::Get { object, .. } => self.visit_get_expr(object),
+            Expr::Set { object, value, .. } => self.visit_set_expr(value, object),
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::{
     interpreter::Interpreter,
@@ -21,10 +21,10 @@ impl Callable for Class {
     }
 
     fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
-        Ok(Value::ClassInstance(ClassInstance {
+        Ok(Value::ClassInstance(Rc::new(RefCell::new(ClassInstance {
             class: self.clone(),
             fields: HashMap::new(),
-        }))
+        }))))
     }
 }
 
@@ -34,11 +34,24 @@ impl Display for Class {
     }
 }
 
+
+// ======================
+// Design note:
+// ======================
+// Why this?
+// 
+// A `ClassInstance` type doesn't work, because when setting properties
+// We need a mutable ref, we still can menage to mutate, but
+// When I tried do the getter, it somehow, returned an immutable state...
+// Without the changes I've made.
+pub type ClassInstanceRef = Rc<RefCell<ClassInstance>>;
+
 #[derive(Debug, Clone)]
 pub struct ClassInstance {
     class: Class,
     fields: HashMap<String, Value>,
 }
+
 
 impl ClassInstance {
     pub fn get(&self, name: &Token) -> Result<Value> {
@@ -49,6 +62,12 @@ impl ClassInstance {
                 message: format!("Undefined property '{}'.", name.lexeme),
             })),
         }
+    }
+
+    pub fn set(&mut self, name: &Token, value: &Value) -> Result<()> {
+        let key = name.lexeme.clone();
+        self.fields.insert(key, value.clone());
+        Ok(())
     }
 }
 

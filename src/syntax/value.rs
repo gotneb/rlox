@@ -1,5 +1,5 @@
 use crate::impls::{
-    class::{Class, ClassInstance},
+    class::{Class, ClassInstanceRef},
     function::{Function, NativeFunction},
 };
 
@@ -8,7 +8,7 @@ use crate::impls::{
 pub enum Value {
     Boolean(bool),
     Class(Class),
-    ClassInstance(ClassInstance),
+    ClassInstance(ClassInstanceRef),
     Number(f64),
     String(String),
     Function(Function),

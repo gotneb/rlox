@@ -148,7 +148,7 @@ impl Interpreter {
             }
             Value::NativeFunction(_) => "<native fn>".into(),
             Value::Class(class) => class.to_string(),
-            Value::ClassInstance(class_instance) => class_instance.to_string(),
+            Value::ClassInstance(class_instance) => class_instance.borrow().to_string(),
         }
     }
 
@@ -322,7 +322,7 @@ impl Interpreter {
     fn visit_get_expr(&mut self, name: &Token, object: &Expr) -> Result<Value> {
         let object = self.evaluate(object)?;
         match object {
-            Value::ClassInstance(instance) => instance.get(name),
+            Value::ClassInstance(instance) => instance.borrow().get(name),
             _ => Exception::runtime_error(name.clone(), "Only instances have property".into()),
         }
     }
@@ -355,6 +355,19 @@ impl Interpreter {
         }
 
         self.evaluate(right)
+    }
+
+    fn visit_set_expr(&mut self, name: &Token, object: &Expr, value: &Expr) -> Result<Value> {
+        let object = self.evaluate(object)?;
+
+        match object {
+            Value::ClassInstance(instance) => {
+                let value = self.evaluate(value)?;
+                instance.borrow_mut().set(name, &value)?;
+                Ok(value)
+            },
+            _ => Exception::runtime_error(name.clone(), "Only instances have fields.".into()),
+        }
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
@@ -457,6 +470,12 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 ..
             } => self.visit_call_expr(callee, paren, arguments),
             Expr::Get { name, object, .. } => self.visit_get_expr(name, object),
+            Expr::Set {
+                name,
+                object,
+                value,
+                ..
+            } => self.visit_set_expr(name, object, value),
         }
     }
 }

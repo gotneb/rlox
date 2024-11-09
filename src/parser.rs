@@ -278,6 +278,13 @@ impl Parser {
                     name,
                     value: Box::new(value),
                 });
+            } else if let Expr::Get { name, object, .. } = expr {
+                return Ok(Expr::Set {
+                    uid: new_uid(),
+                    name,
+                    object,
+                    value: Box::new(value),
+                });
             }
 
             return Err(self.error(equals, "Invalid assignment target."));
@@ -447,7 +454,6 @@ impl Parser {
             }
         }
 
-        //println!("AST\n{:#?}", expr);
         Ok(expr)
     }
 
