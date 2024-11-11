@@ -7,10 +7,17 @@ class Game {
 // print(Game);
 // print(Game());
 
-var g = Game();
-print(g);
-g.title = "Shadow of Colossus";
+//var obj = Game();
+// print(g);
+// g.title = "Shadow of Colossus";
 
-print("Game title: " + g.title);
+//obj.play();
 
-print(g.title.year);
+Game().play();
+
+// fun notMethod(argument) {
+//     print("Called function with " + argument);
+// }
+
+// g.method = notMethod;
+// g.method("Something");

@@ -6,13 +6,24 @@ use crate::{
     Exception, RuntimeError,
 };
 
-use super::callable::Callable;
+use super::{callable::Callable, function::Function};
 
 type Result<T> = std::result::Result<T, Exception>;
 
 #[derive(Debug, Clone)]
 pub struct Class {
-    pub name: String,
+    name: String,
+    methods: HashMap<String, Function>,
+}
+
+impl Class {
+    pub fn new(name: String, methods: HashMap<String, Function>) -> Class {
+        Class { name, methods }
+    }
+
+    pub fn find_method(&self, name: &String) -> Option<Value> {
+        self.methods.get(name).map(|f| Value::Function(f.clone()))
+    }
 }
 
 impl Callable for Class {
@@ -34,12 +45,11 @@ impl Display for Class {
     }
 }
 
-
 // ======================
 // Design note:
 // ======================
 // Why this?
-// 
+//
 // A `ClassInstance` type doesn't work, because when setting properties
 // We need a mutable ref, we still can menage to mutate, but
 // When I tried do the getter, it somehow, returned an immutable state...
@@ -52,15 +62,21 @@ pub struct ClassInstance {
     fields: HashMap<String, Value>,
 }
 
-
 impl ClassInstance {
     pub fn get(&self, name: &Token) -> Result<Value> {
         match self.fields.get(&name.lexeme) {
             Some(value) => Ok(value.clone()),
-            None => Err(Exception::RuntimeError(RuntimeError {
-                token: name.clone(),
-                message: format!("Undefined property '{}'.", name.lexeme),
-            })),
+            None => {
+                // Looking for a field implicitly implies that fields shadow methods
+                if let Some(method) = self.class.find_method(&name.lexeme) {
+                    return Ok(method);
+                }
+
+                Err(Exception::RuntimeError(RuntimeError {
+                    token: name.clone(),
+                    message: format!("Undefined property '{}'.", name.lexeme),
+                }))
+            }
         }
     }
 

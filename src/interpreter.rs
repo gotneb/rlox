@@ -100,13 +100,23 @@ impl Interpreter {
         Ok(())
     }
 
-    fn visit_class_stmt(&mut self, name: &Token) -> Result<()> {
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<()> {
         self.env
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
-        let class = Class {
-            name: name.lexeme.clone(),
-        };
+
+        let mut class_methods = HashMap::new();
+        for method in methods {
+            match method {
+                Stmt::Function { name, .. } => {
+                    let function = Function::new(method.clone(), self.env.clone());
+                    class_methods.insert(name.lexeme.clone(), function);
+                }
+                _ => panic!("Stmt is not a method!"),
+            };
+        }
+
+        let class = Class::new(name.lexeme.clone(), class_methods);
         self.env.borrow_mut().assign(name, Value::Class(class))?;
 
         Ok(())
@@ -365,7 +375,7 @@ impl Interpreter {
                 let value = self.evaluate(value)?;
                 instance.borrow_mut().set(name, &value)?;
                 Ok(value)
-            },
+            }
             _ => Exception::runtime_error(name.clone(), "Only instances have fields.".into()),
         }
     }
@@ -424,7 +434,7 @@ impl stmt::Visitor<Result<()>> for Interpreter {
     fn visit_stmt(&mut self, stmt: &Stmt) -> Result<()> {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
-            Stmt::Class { name, .. } => self.visit_class_stmt(name),
+            Stmt::Class { name, methods } => self.visit_class_stmt(name, methods),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => {
                 self.execute_block(statements, Environment::new_local(&self.env))

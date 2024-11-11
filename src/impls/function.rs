@@ -19,6 +19,15 @@ pub struct Function {
     pub closure: EnvRef,
 }
 
+impl Function {
+    pub fn new(declaration: Stmt, closure: EnvRef) -> Function {
+        Function {
+            declaration,
+            closure,
+        }
+    }
+}
+
 impl Callable for NativeFunction {
     fn arity(&self) -> usize {
         self.arity

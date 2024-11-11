@@ -15,6 +15,7 @@ use crate::{
 enum FunctionType {
     Function,
     None,
+    Method,
 }
 
 struct State {
@@ -146,9 +147,19 @@ impl Resolver<'_> {
         self.end_scope();
     }
 
-    fn visit_class_stmt(&mut self, name: &Token) {
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) {
         self.declare(name);
         self.define(name);
+
+        for method in methods {
+            if let Stmt::Function {
+                parameters, body, ..
+            } = method
+            {
+                let declaration = FunctionType::Method;
+                self.resolve_function(parameters, body, declaration);
+            }
+        }
     }
 
     fn visit_expression_stmt(&mut self, expr: &Expr) {
@@ -275,7 +286,7 @@ impl stmt::Visitor<()> for Resolver<'_> {
     fn visit_stmt(&mut self, stmt: &Stmt) {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
-            Stmt::Class { name, .. } => self.visit_class_stmt(name),
+            Stmt::Class { name, methods } => self.visit_class_stmt(name, methods),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => self.visit_block_stmt(statements),
             Stmt::If {
