@@ -22,6 +22,8 @@
 // g.method = notMethod;
 // g.method("Something");
 
+print(this);
+
 class Cake {
     taste() {
         var adjective = "delicious";

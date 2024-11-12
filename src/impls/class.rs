@@ -31,7 +31,7 @@ impl Callable for Class {
         0
     }
 
-    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
+    fn call(&self, _interpreter: &mut Interpreter, _arguments: Vec<Value>) -> Result<Value> {
         Ok(Value::ClassInstance(Rc::new(RefCell::new(ClassInstance {
             class: self.clone(),
             fields: HashMap::new(),

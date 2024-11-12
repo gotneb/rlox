@@ -18,6 +18,12 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Clone, Copy)]
+enum ClassType {
+    None,
+    Class,
+}
+
 struct State {
     pub is_ready: bool,
     pub is_used: bool,
@@ -38,6 +44,7 @@ pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, State>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 impl Resolver<'_> {
@@ -46,6 +53,7 @@ impl Resolver<'_> {
             interpreter,
             scopes: vec![],
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -148,6 +156,9 @@ impl Resolver<'_> {
     }
 
     fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) {
+        let enclosing_class = self.current_class;
+        self.current_class = ClassType::Class;
+
         self.declare(name);
         self.define(name);
 
@@ -166,6 +177,7 @@ impl Resolver<'_> {
         }
 
         self.end_scope();
+        self.current_class = enclosing_class;
     }
 
     fn visit_expression_stmt(&mut self, expr: &Expr) {
@@ -265,6 +277,14 @@ impl Resolver<'_> {
     }
 
     fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) {
+        if let ClassType::None = self.current_class {
+            return RuntimeError {
+                message: "Can't use 'this' outside of a class.".into(),
+                token: keyword.clone(),
+            }
+            .error()
+        }
+
         self.resolve_local(expr, keyword);
     }
 
