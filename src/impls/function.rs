@@ -5,7 +5,7 @@ use crate::{
     Exception,
 };
 
-use super::callable::Callable;
+use super::{callable::Callable, class::ClassInstanceRef};
 
 #[derive(Debug, Clone)]
 pub struct NativeFunction {
@@ -25,6 +25,14 @@ impl Function {
             declaration,
             closure,
         }
+    }
+
+    pub fn bind(&self, instance: ClassInstanceRef) -> Function {
+        let env = Environment::new_local(&self.closure);
+        env.borrow_mut()
+            .define("this".into(), Value::ClassInstance(instance));
+
+        Function::new(self.declaration.clone(), env)
     }
 }
 

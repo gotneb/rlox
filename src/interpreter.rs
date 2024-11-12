@@ -332,7 +332,7 @@ impl Interpreter {
     fn visit_get_expr(&mut self, name: &Token, object: &Expr) -> Result<Value> {
         let object = self.evaluate(object)?;
         match object {
-            Value::ClassInstance(instance) => instance.borrow().get(name),
+            Value::ClassInstance(instance) => instance.borrow().get(name, instance.clone()),
             _ => Exception::runtime_error(name.clone(), "Only instances have property".into()),
         }
     }
@@ -369,7 +369,6 @@ impl Interpreter {
 
     fn visit_set_expr(&mut self, name: &Token, object: &Expr, value: &Expr) -> Result<Value> {
         let object = self.evaluate(object)?;
-
         match object {
             Value::ClassInstance(instance) => {
                 let value = self.evaluate(value)?;
@@ -378,6 +377,10 @@ impl Interpreter {
             }
             _ => Exception::runtime_error(name.clone(), "Only instances have fields.".into()),
         }
+    }
+
+    fn visit_this_expr(&mut self, keyword: &Token, expr: &Expr) -> Result<Value> {
+        self.loopkup_variable(keyword, expr)
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Value> {
@@ -486,6 +489,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 value,
                 ..
             } => self.visit_set_expr(name, object, value),
+            Expr::This { name, .. } => self.visit_this_expr(name, expr),
         }
     }
 }

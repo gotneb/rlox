@@ -1,8 +1,8 @@
-class Game {
-    play() {
-        print("Game started");
-    }
-}
+// class Game {
+//     play() {
+//         print("Game started");
+//     }
+// }
 
 // print(Game);
 // print(Game());
@@ -13,7 +13,7 @@ class Game {
 
 //obj.play();
 
-Game().play();
+// Game().play();
 
 // fun notMethod(argument) {
 //     print("Called function with " + argument);
@@ -21,3 +21,14 @@ Game().play();
 
 // g.method = notMethod;
 // g.method("Something");
+
+class Cake {
+    taste() {
+        var adjective = "delicious";
+        print("The " + this.flavor + " cake is " + adjective + "!");
+    }
+}
+
+var cake = Cake();
+cake.flavor = "German chocolate";
+cake.taste();

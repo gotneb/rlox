@@ -151,6 +151,10 @@ impl Resolver<'_> {
         self.declare(name);
         self.define(name);
 
+        self.begin_scope();
+        self.peek_scopes()
+            .insert("this".into(), State::new(true, true, name.clone()));
+
         for method in methods {
             if let Stmt::Function {
                 parameters, body, ..
@@ -160,6 +164,8 @@ impl Resolver<'_> {
                 self.resolve_function(parameters, body, declaration);
             }
         }
+
+        self.end_scope();
     }
 
     fn visit_expression_stmt(&mut self, expr: &Expr) {
@@ -258,6 +264,10 @@ impl Resolver<'_> {
         self.resolve_expr(object);
     }
 
+    fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) {
+        self.resolve_local(expr, keyword);
+    }
+
     fn visit_unary_expr(&mut self, right: &Expr) {
         self.visit_expr(right);
     }
@@ -320,6 +330,7 @@ impl expr::Visitor<()> for Resolver<'_> {
             } => self.visit_call_expr(callee, arguments),
             Expr::Get { object, .. } => self.visit_get_expr(object),
             Expr::Set { object, value, .. } => self.visit_set_expr(value, object),
+            Expr::This { name, .. } => self.visit_this_expr(expression, name),
         }
     }
 }

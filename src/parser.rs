@@ -485,6 +485,10 @@ impl Parser {
             });
         }
 
+        if self.match_token(&[TokenType::This]) {
+            return Ok(Expr::This { uid: new_uid(), name: self.previous() })
+        }
+
         if self.match_token(&[TokenType::Identifier]) {
             return Ok(Expr::Variable {
                 uid: new_uid(),

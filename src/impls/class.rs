@@ -63,13 +63,14 @@ pub struct ClassInstance {
 }
 
 impl ClassInstance {
-    pub fn get(&self, name: &Token) -> Result<Value> {
+    pub fn get(&self, name: &Token, instance_ref: ClassInstanceRef) -> Result<Value> {
         match self.fields.get(&name.lexeme) {
             Some(value) => Ok(value.clone()),
             None => {
                 // Looking for a field implicitly implies that fields shadow methods
-                if let Some(method) = self.class.find_method(&name.lexeme) {
-                    return Ok(method);
+                if let Some(Value::Function(method)) = self.class.find_method(&name.lexeme) {
+                    let bound_method = method.bind(instance_ref);
+                    return Ok(Value::Function(bound_method));
                 }
 
                 Err(Exception::RuntimeError(RuntimeError {
