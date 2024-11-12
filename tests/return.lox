@@ -1,5 +1,5 @@
 fun sum(a, b) {
-    return a + 2;
+    return a + b;
 }
 
 fun fib(n) {
