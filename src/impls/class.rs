@@ -27,15 +27,28 @@ impl Class {
 }
 
 impl Callable for Class {
+    // FIX: Classes with non-empty init method have a weird bug when acessing parameters inside the body
     fn arity(&self) -> usize {
+        if let Some(initializer) = self.find_method(&"init".into()) {
+            match initializer {
+                Value::Function(initializer) => return initializer.arity(),
+                _ => panic!("initializer is not a function!"),
+            }
+        }
+
         0
     }
 
-    fn call(&self, _interpreter: &mut Interpreter, _arguments: Vec<Value>) -> Result<Value> {
-        Ok(Value::ClassInstance(Rc::new(RefCell::new(ClassInstance {
-            class: self.clone(),
-            fields: HashMap::new(),
-        }))))
+    fn call(&self, interpreter: &mut Interpreter, args: Vec<Value>) -> Result<Value> {
+        let instance = ClassInstance::new(self.clone());
+
+        if let Some(method) = self.find_method(&"init".into()) {
+            if let Value::Function(initializer) = method {
+                initializer.bind(instance.clone()).call(interpreter, args)?;
+            }
+        }
+
+        Ok(Value::ClassInstance(instance))
     }
 }
 
@@ -63,6 +76,15 @@ pub struct ClassInstance {
 }
 
 impl ClassInstance {
+    pub fn new(class: Class) -> ClassInstanceRef {
+        let instance = Self {
+            class: class,
+            fields: HashMap::new(),
+        };
+
+        Rc::new(RefCell::new(instance))
+    }
+
     pub fn get(&self, name: &Token, instance_ref: ClassInstanceRef) -> Result<Value> {
         match self.fields.get(&name.lexeme) {
             Some(value) => Ok(value.clone()),
