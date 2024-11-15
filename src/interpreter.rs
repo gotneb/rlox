@@ -100,12 +100,33 @@ impl Interpreter {
         Ok(())
     }
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<()> {
+    fn visit_class_stmt(
+        &mut self,
+        name: &Token,
+        methods: &Vec<Stmt>,
+        static_methods: &Vec<Stmt>,
+    ) -> Result<()> {
         self.env
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
 
         let mut class_methods = HashMap::new();
+        let mut class_static_methods = HashMap::new();
+
+        for static_method in static_methods {
+            match static_method {
+                Stmt::Function { name, .. } => {
+                    let function = Function::new(
+                        static_method.clone(),
+                        self.env.clone(),
+                        false,
+                    );
+                    class_static_methods.insert(name.lexeme.clone(), function);
+                }
+                _ => panic!("Stmt is not a static method!"),
+            };
+        }
+
         for method in methods {
             match method {
                 Stmt::Function { name, .. } => {
@@ -117,7 +138,7 @@ impl Interpreter {
             };
         }
 
-        let class = Class::new(name.lexeme.clone(), class_methods);
+        let class = Class::new(name.lexeme.clone(), class_methods, class_static_methods);
         self.env.borrow_mut().assign(name, Value::Class(class))?;
 
         Ok(())
@@ -322,7 +343,7 @@ impl Interpreter {
             Value::Class(callee) => {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
-            },
+            }
             _ => Exception::runtime_error(
                 paren.clone(),
                 "Can only call functions and classes.".into(),
@@ -334,6 +355,7 @@ impl Interpreter {
         let object = self.evaluate(object)?;
         match object {
             Value::ClassInstance(instance) => instance.borrow().get(name, instance.clone()),
+            Value::Class(class) => class.get(name),
             _ => Exception::runtime_error(name.clone(), "Only instances have property".into()),
         }
     }
@@ -438,7 +460,11 @@ impl stmt::Visitor<Result<()>> for Interpreter {
     fn visit_stmt(&mut self, stmt: &Stmt) -> Result<()> {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
-            Stmt::Class { name, methods } => self.visit_class_stmt(name, methods),
+            Stmt::Class {
+                name,
+                methods,
+                static_methods,
+            } => self.visit_class_stmt(name, methods, static_methods),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => {
                 self.execute_block(statements, Environment::new_local(&self.env))

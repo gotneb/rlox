@@ -1,0 +1,11 @@
+class Math {
+    class square(n) {
+        return n*n;
+    }
+}
+
+// Ok
+print("--> 3*3=" + Math.square(3));
+
+// Error
+print("--> 3*3*3=" + Math.cube(3));

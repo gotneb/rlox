@@ -61,13 +61,25 @@ impl Parser {
         self.consume(TokenType::LeftBrace, "Expected '{' before class body.")?;
 
         let mut methods = vec![];
+        let mut static_methods = vec![];
+
         while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
-            methods.push(self.function("method".into())?);
+            if self.match_token(&[TokenType::Class]) {
+                // Static methods
+                static_methods.push(self.function("static method".into())?);
+            } else {
+                // Instance methods
+                methods.push(self.function("method".into())?);
+            }
         }
 
         self.consume(TokenType::RightBrace, "Expected '}' after class body")?;
 
-        Ok(Stmt::Class { name, methods })
+        Ok(Stmt::Class {
+            name,
+            methods,
+            static_methods,
+        })
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -486,7 +498,10 @@ impl Parser {
         }
 
         if self.match_token(&[TokenType::This]) {
-            return Ok(Expr::This { uid: new_uid(), name: self.previous() })
+            return Ok(Expr::This {
+                uid: new_uid(),
+                name: self.previous(),
+            });
         }
 
         if self.match_token(&[TokenType::Identifier]) {

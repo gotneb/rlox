@@ -150,13 +150,30 @@ impl Resolver<'_> {
         }
     }
 
+    fn resolve_method(&mut self, method: &Stmt) {
+        if let Stmt::Function {
+            parameters,
+            body,
+            name,
+        } = method
+        {
+            let mut declaration = FunctionType::Method;
+
+            if name.lexeme == "init" {
+                declaration = FunctionType::Initializer;
+            }
+
+            self.resolve_function(parameters, body, declaration);
+        }
+    }
+
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) {
         self.begin_scope();
         self.resolve_block(statements);
         self.end_scope();
     }
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) {
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>, static_methods: &Vec<Stmt>) {
         let enclosing_class = self.current_class;
         self.current_class = ClassType::Class;
 
@@ -167,21 +184,12 @@ impl Resolver<'_> {
         self.peek_scopes()
             .insert("this".into(), State::new(true, true, name.clone()));
 
+        for static_method in static_methods {
+            self.resolve_method(static_method);
+        }
+
         for method in methods {
-            if let Stmt::Function {
-                parameters,
-                body,
-                name,
-            } = method
-            {
-                let mut declaration = FunctionType::Method;
-
-                if name.lexeme == "init" {
-                    declaration = FunctionType::Initializer;
-                }
-
-                self.resolve_function(parameters, body, declaration);
-            }
+            self.resolve_method(method);
         }
 
         self.end_scope();
@@ -334,7 +342,11 @@ impl stmt::Visitor<()> for Resolver<'_> {
     fn visit_stmt(&mut self, stmt: &Stmt) {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
-            Stmt::Class { name, methods } => self.visit_class_stmt(name, methods),
+            Stmt::Class {
+                name,
+                methods,
+                static_methods,
+            } => self.visit_class_stmt(name, methods, static_methods),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => self.visit_block_stmt(statements),
             Stmt::If {

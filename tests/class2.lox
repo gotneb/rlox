@@ -3,10 +3,10 @@ class Player {
         this.name = new_name;
     }
 
-    // run() {
-    //     print("Player " + this.name + " is running...");
-    // }
+    run() {
+        print("Player " + this.name + " is running...");
+    }
 }
 
-Player("Laios");
-// p.run();
+var p = Player("Laios");
+p.run();

@@ -14,11 +14,30 @@ type Result<T> = std::result::Result<T, Exception>;
 pub struct Class {
     name: String,
     methods: HashMap<String, Function>,
+    static_methods: HashMap<String, Function>,
 }
 
 impl Class {
-    pub fn new(name: String, methods: HashMap<String, Function>) -> Class {
-        Class { name, methods }
+    pub fn new(
+        name: String,
+        methods: HashMap<String, Function>,
+        static_methods: HashMap<String, Function>,
+    ) -> Class {
+        Class {
+            name,
+            methods,
+            static_methods,
+        }
+    }
+
+    pub fn get(&self, name: &Token) -> Result<Value> {
+        match self.static_methods.get(&name.lexeme) {
+            Some(method) => Ok(Value::Function(method.clone())),
+            None => Exception::runtime_error(
+                name.clone(),
+                format!("Class doesn't have a static method called \"{}\".", name.lexeme),
+            ),
+        }
     }
 
     pub fn find_method(&self, name: &String) -> Option<Value> {
@@ -27,7 +46,6 @@ impl Class {
 }
 
 impl Callable for Class {
-    // FIX: Classes with non-empty init method have a weird bug when acessing parameters inside the body
     fn arity(&self) -> usize {
         if let Some(initializer) = self.find_method(&"init".into()) {
             match initializer {
@@ -78,7 +96,7 @@ pub struct ClassInstance {
 impl ClassInstance {
     pub fn new(class: Class) -> ClassInstanceRef {
         let instance = Self {
-            class: class,
+            class,
             fields: HashMap::new(),
         };
 
