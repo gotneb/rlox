@@ -109,7 +109,8 @@ impl Interpreter {
         for method in methods {
             match method {
                 Stmt::Function { name, .. } => {
-                    let function = Function::new(method.clone(), self.env.clone(), name.lexeme == "init");
+                    let function =
+                        Function::new(method.clone(), self.env.clone(), name.lexeme == "init");
                     class_methods.insert(name.lexeme.clone(), function);
                 }
                 _ => panic!("Stmt is not a method!"),
@@ -318,7 +319,10 @@ impl Interpreter {
                 callee.check_arity(evaluated_args.len(), paren)?;
                 callee.call(self, evaluated_args)
             }
-            Value::Class(callee) => callee.call(self, vec![]),
+            Value::Class(callee) => {
+                callee.check_arity(evaluated_args.len(), paren)?;
+                callee.call(self, evaluated_args)
+            },
             _ => Exception::runtime_error(
                 paren.clone(),
                 "Can only call functions and classes.".into(),
@@ -369,7 +373,9 @@ impl Interpreter {
         match object {
             Value::ClassInstance(instance) => {
                 let value = self.evaluate(value)?;
+                println!("Evaluated");
                 instance.borrow_mut().set(name, &value)?;
+                println!("Setted");
                 Ok(value)
             }
             _ => Exception::runtime_error(name.clone(), "Only instances have fields.".into()),
@@ -402,6 +408,7 @@ impl Interpreter {
         let distance = self.locals.get(expr);
 
         if let Some(distance) = distance {
+            println!("Got here! | name: {:?} | Distance: {}", name, *distance);
             self.env.borrow().get_at(*distance, &name.lexeme)
         } else {
             self.globals.borrow().get(name)

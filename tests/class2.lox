@@ -1,0 +1,12 @@
+class Player {
+    init(new_name) {
+        this.name = new_name;
+    }
+
+    // run() {
+    //     print("Player " + this.name + " is running...");
+    // }
+}
+
+Player("Laios");
+// p.run();
