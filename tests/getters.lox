@@ -1,0 +1,12 @@
+class Circle {
+    init(radius) {
+        this.radius = radius;
+    }
+
+    area {
+        return this.radius * this.radius;
+    }
+}
+
+var s = Circle(5);
+print("Circle of side " + 5 + " has area: " + s.area);

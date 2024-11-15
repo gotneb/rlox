@@ -15,6 +15,7 @@ pub enum Stmt {
         statements: Vec<Stmt>,
     },
     Class {
+        getters: Vec<Stmt>,
         name: Token,
         methods: Vec<Stmt>,
         static_methods: Vec<Stmt>,

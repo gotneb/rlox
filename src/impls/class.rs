@@ -12,6 +12,7 @@ type Result<T> = std::result::Result<T, Exception>;
 
 #[derive(Debug, Clone)]
 pub struct Class {
+    getters: HashMap<String, Function>,
     name: String,
     methods: HashMap<String, Function>,
     static_methods: HashMap<String, Function>,
@@ -19,11 +20,13 @@ pub struct Class {
 
 impl Class {
     pub fn new(
+        getters: HashMap<String, Function>,
         name: String,
         methods: HashMap<String, Function>,
         static_methods: HashMap<String, Function>,
     ) -> Class {
         Class {
+            getters,
             name,
             methods,
             static_methods,
@@ -35,9 +38,18 @@ impl Class {
             Some(method) => Ok(Value::Function(method.clone())),
             None => Exception::runtime_error(
                 name.clone(),
-                format!("Class doesn't have a static method called \"{}\".", name.lexeme),
+                format!(
+                    "Class doesn't have a static method called \"{}\".",
+                    name.lexeme
+                ),
             ),
         }
+    }
+
+    pub fn find_getter(&self, name: &Token) -> Option<Value> {
+        self.getters
+            .get(&name.lexeme)
+            .map(|f| Value::Function(f.clone()))
     }
 
     pub fn find_method(&self, name: &String) -> Option<Value> {
@@ -89,7 +101,7 @@ pub type ClassInstanceRef = Rc<RefCell<ClassInstance>>;
 
 #[derive(Debug, Clone)]
 pub struct ClassInstance {
-    class: Class,
+    pub class: Class,
     fields: HashMap<String, Value>,
 }
 
@@ -103,11 +115,26 @@ impl ClassInstance {
         Rc::new(RefCell::new(instance))
     }
 
-    pub fn get(&self, name: &Token, instance_ref: ClassInstanceRef) -> Result<Value> {
+    pub fn get(
+        &self,
+        name: &Token,
+        instance_ref: ClassInstanceRef,
+        interpreter: &mut Interpreter,
+    ) -> Result<Value> {
         match self.fields.get(&name.lexeme) {
+            // Field
             Some(value) => Ok(value.clone()),
             None => {
-                // Looking for a field implicitly implies that fields shadow methods
+                // Getter
+                // Looking for a field implicitly implies that fields shadow getters
+                if let Some(Value::Function(getter)) = self.class.find_getter(name) {
+                    let bound_getter = getter.bind(instance_ref);
+                    let value = bound_getter.call(interpreter, vec![])?;
+                    return Ok(value);
+                }
+
+                // Method
+                // Looking for a getters implicitly implies that getters shadow methods
                 if let Some(Value::Function(method)) = self.class.find_method(&name.lexeme) {
                     let bound_method = method.bind(instance_ref);
                     return Ok(Value::Function(bound_method));

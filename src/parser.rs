@@ -60,6 +60,7 @@ impl Parser {
         let name = self.consume(TokenType::Identifier, "Expected a class name.")?;
         self.consume(TokenType::LeftBrace, "Expected '{' before class body.")?;
 
+        let mut getters = vec![];
         let mut methods = vec![];
         let mut static_methods = vec![];
 
@@ -67,6 +68,8 @@ impl Parser {
             if self.match_token(&[TokenType::Class]) {
                 // Static methods
                 static_methods.push(self.function("static method".into())?);
+            } else if !self.is_at_end() && self.peek_next().token_type == TokenType::LeftBrace {
+                getters.push(self.getter()?);
             } else {
                 // Instance methods
                 methods.push(self.function("method".into())?);
@@ -76,9 +79,24 @@ impl Parser {
         self.consume(TokenType::RightBrace, "Expected '}' after class body")?;
 
         Ok(Stmt::Class {
+            getters,
             name,
             methods,
             static_methods,
+        })
+    }
+
+    fn getter(&mut self) -> Result<Stmt> {
+        let name = self.consume(TokenType::Identifier, "Expected getter name.")?;
+        self.consume(TokenType::LeftBrace, "Expected '{' after getter name.")?;
+
+        let body = self.block()?;
+
+        // Getters behave like a function
+        Ok(Stmt::Function {
+            name,
+            body,
+            parameters: vec![],
         })
     }
 
@@ -557,6 +575,11 @@ impl Parser {
 
     fn peek(&self) -> Token {
         self.tokens.get(self.current).unwrap().clone()
+    }
+
+    fn peek_next(&self) -> Token {
+        let next = self.current + 1;
+        self.tokens.get(next).unwrap().clone()
     }
 
     fn previous(&self) -> Token {

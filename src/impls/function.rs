@@ -83,7 +83,6 @@ impl Callable for Function {
                         if self.is_initializer {
                             return self.closure.borrow().get_at(0, &"this".into());
                         }
-
                         Ok(value)
                     }
                 };

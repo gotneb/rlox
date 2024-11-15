@@ -173,7 +173,13 @@ impl Resolver<'_> {
         self.end_scope();
     }
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>, static_methods: &Vec<Stmt>) {
+    fn visit_class_stmt(
+        &mut self,
+        getters: &Vec<Stmt>,
+        name: &Token,
+        methods: &Vec<Stmt>,
+        static_methods: &Vec<Stmt>,
+    ) {
         let enclosing_class = self.current_class;
         self.current_class = ClassType::Class;
 
@@ -183,6 +189,10 @@ impl Resolver<'_> {
         self.begin_scope();
         self.peek_scopes()
             .insert("this".into(), State::new(true, true, name.clone()));
+
+        for getter in getters {
+            self.resolve_method(getter);
+        }
 
         for static_method in static_methods {
             self.resolve_method(static_method);
@@ -343,10 +353,11 @@ impl stmt::Visitor<()> for Resolver<'_> {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
             Stmt::Class {
+                getters,
                 name,
                 methods,
                 static_methods,
-            } => self.visit_class_stmt(name, methods, static_methods),
+            } => self.visit_class_stmt(getters, name, methods, static_methods),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => self.visit_block_stmt(statements),
             Stmt::If {

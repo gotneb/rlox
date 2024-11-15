@@ -87,7 +87,6 @@ impl Interpreter {
 
     pub fn execute_block(&mut self, statements: &Vec<Stmt>, env: EnvRef) -> Result<()> {
         let previous = self.env.clone();
-
         self.env = env;
         for statement in statements {
             if let Err(e) = self.execute(statement) {
@@ -103,6 +102,7 @@ impl Interpreter {
     fn visit_class_stmt(
         &mut self,
         name: &Token,
+        getters: &Vec<Stmt>,
         methods: &Vec<Stmt>,
         static_methods: &Vec<Stmt>,
     ) -> Result<()> {
@@ -110,17 +110,24 @@ impl Interpreter {
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
 
+        let mut class_getters = HashMap::new();
         let mut class_methods = HashMap::new();
         let mut class_static_methods = HashMap::new();
+
+        for getter in getters {
+            match getter {
+                Stmt::Function { name, .. } => {
+                    let function = Function::new(getter.clone(), self.env.clone(), false);
+                    class_getters.insert(name.lexeme.clone(), function);
+                }
+                _ => panic!("Stmt is not a getter!"),
+            };
+        }
 
         for static_method in static_methods {
             match static_method {
                 Stmt::Function { name, .. } => {
-                    let function = Function::new(
-                        static_method.clone(),
-                        self.env.clone(),
-                        false,
-                    );
+                    let function = Function::new(static_method.clone(), self.env.clone(), false);
                     class_static_methods.insert(name.lexeme.clone(), function);
                 }
                 _ => panic!("Stmt is not a static method!"),
@@ -138,7 +145,12 @@ impl Interpreter {
             };
         }
 
-        let class = Class::new(name.lexeme.clone(), class_methods, class_static_methods);
+        let class = Class::new(
+            class_getters,
+            name.lexeme.clone(),
+            class_methods,
+            class_static_methods,
+        );
         self.env.borrow_mut().assign(name, Value::Class(class))?;
 
         Ok(())
@@ -318,7 +330,7 @@ impl Interpreter {
                 }
                 _ => Interpreter::number_operands_error(operator),
             },
-            _ => todo!(),
+            _ => panic!("Operands not recognized!"),
         }
     }
 
@@ -354,7 +366,7 @@ impl Interpreter {
     fn visit_get_expr(&mut self, name: &Token, object: &Expr) -> Result<Value> {
         let object = self.evaluate(object)?;
         match object {
-            Value::ClassInstance(instance) => instance.borrow().get(name, instance.clone()),
+            Value::ClassInstance(instance) => instance.borrow().get(name, instance.clone(), self),
             Value::Class(class) => class.get(name),
             _ => Exception::runtime_error(name.clone(), "Only instances have property".into()),
         }
@@ -461,10 +473,11 @@ impl stmt::Visitor<Result<()>> for Interpreter {
         match stmt {
             Stmt::Expression(expr) => self.visit_expression_stmt(expr),
             Stmt::Class {
+                getters,
                 name,
                 methods,
                 static_methods,
-            } => self.visit_class_stmt(name, methods, static_methods),
+            } => self.visit_class_stmt(name, getters, methods, static_methods),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => {
                 self.execute_block(statements, Environment::new_local(&self.env))
