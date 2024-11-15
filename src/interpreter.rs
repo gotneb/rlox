@@ -373,9 +373,7 @@ impl Interpreter {
         match object {
             Value::ClassInstance(instance) => {
                 let value = self.evaluate(value)?;
-                println!("Evaluated");
                 instance.borrow_mut().set(name, &value)?;
-                println!("Setted");
                 Ok(value)
             }
             _ => Exception::runtime_error(name.clone(), "Only instances have fields.".into()),
@@ -408,7 +406,6 @@ impl Interpreter {
         let distance = self.locals.get(expr);
 
         if let Some(distance) = distance {
-            println!("Got here! | name: {:?} | Distance: {}", name, *distance);
             self.env.borrow().get_at(*distance, &name.lexeme)
         } else {
             self.globals.borrow().get(name)
