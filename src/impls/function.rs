@@ -79,7 +79,13 @@ impl Callable for Function {
             if let Err(e) = interpreter.execute_block(body, env) {
                 return match e {
                     Exception::RuntimeError(e) => Err(Exception::RuntimeError(e)),
-                    Exception::Return(value) => Ok(value),
+                    Exception::Return(value) => {
+                        if self.is_initializer {
+                            return self.closure.borrow().get_at(0, &"this".into());
+                        }
+
+                        Ok(value)
+                    }
                 };
             }
         }

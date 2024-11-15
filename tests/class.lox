@@ -22,9 +22,13 @@
 // g.method = notMethod;
 // g.method("Something");
 
-print(this);
+// print(this);
 
 class Cake {
+    init() {
+        print("Object initialized");
+    }
+
     taste() {
         var adjective = "delicious";
         print("The " + this.flavor + " cake is " + adjective + "!");
@@ -33,4 +37,4 @@ class Cake {
 
 var cake = Cake();
 cake.flavor = "German chocolate";
-cake.taste();
+print(cake.taste());

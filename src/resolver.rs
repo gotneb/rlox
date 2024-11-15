@@ -16,6 +16,7 @@ enum FunctionType {
     Function,
     None,
     Method,
+    Initializer,
 }
 
 #[derive(Clone, Copy)]
@@ -168,10 +169,17 @@ impl Resolver<'_> {
 
         for method in methods {
             if let Stmt::Function {
-                parameters, body, ..
+                parameters,
+                body,
+                name,
             } = method
             {
-                let declaration = FunctionType::Method;
+                let mut declaration = FunctionType::Method;
+
+                if name.lexeme == "init" {
+                    declaration = FunctionType::Initializer;
+                }
+
                 self.resolve_function(parameters, body, declaration);
             }
         }
@@ -212,7 +220,17 @@ impl Resolver<'_> {
             }
             .error();
         }
+
+        // Statically disallowed return VALUE inside "init"
         if let Some(value) = value {
+            if let FunctionType::Initializer = self.current_function {
+                return RuntimeError {
+                    token: keyword.clone(),
+                    message: "Can't return a value from an initializer.".into(),
+                }
+                .error();
+            }
+
             self.resolve_expr(value);
         }
     }
@@ -282,7 +300,7 @@ impl Resolver<'_> {
                 message: "Can't use 'this' outside of a class.".into(),
                 token: keyword.clone(),
             }
-            .error()
+            .error();
         }
 
         self.resolve_local(expr, keyword);
