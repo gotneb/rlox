@@ -17,13 +17,15 @@ pub struct NativeFunction {
 pub struct Function {
     pub declaration: Stmt,
     pub closure: EnvRef,
+    is_initializer: bool,
 }
 
 impl Function {
-    pub fn new(declaration: Stmt, closure: EnvRef) -> Function {
+    pub fn new(declaration: Stmt, closure: EnvRef, is_initializer: bool) -> Function {
         Function {
             declaration,
             closure,
+            is_initializer,
         }
     }
 
@@ -32,7 +34,7 @@ impl Function {
         env.borrow_mut()
             .define("this".into(), Value::ClassInstance(instance));
 
-        Function::new(self.declaration.clone(), env)
+        Function::new(self.declaration.clone(), env, self.is_initializer)
     }
 }
 
@@ -80,6 +82,10 @@ impl Callable for Function {
                     Exception::Return(value) => Ok(value),
                 };
             }
+        }
+
+        if self.is_initializer {
+            return self.closure.borrow().get_at(0, &"this".into());
         }
 
         Ok(Value::Nil)

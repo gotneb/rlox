@@ -109,7 +109,7 @@ impl Interpreter {
         for method in methods {
             match method {
                 Stmt::Function { name, .. } => {
-                    let function = Function::new(method.clone(), self.env.clone());
+                    let function = Function::new(method.clone(), self.env.clone(), name.lexeme == "init");
                     class_methods.insert(name.lexeme.clone(), function);
                 }
                 _ => panic!("Stmt is not a method!"),
@@ -203,10 +203,7 @@ impl Interpreter {
     }
 
     fn visit_function_stmt(&mut self, name: &Token, function_stmt: &Stmt) -> Result<()> {
-        let function = Function {
-            declaration: function_stmt.clone(),
-            closure: self.env.clone(),
-        };
+        let function = Function::new(function_stmt.clone(), self.env.clone(), false);
         self.env
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Function(function));
