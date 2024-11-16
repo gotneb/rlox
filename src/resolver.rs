@@ -176,19 +176,39 @@ impl Resolver<'_> {
     fn visit_class_stmt(
         &mut self,
         getters: &Vec<Stmt>,
-        name: &Token,
+        class_name: &Token,
         methods: &Vec<Stmt>,
         static_methods: &Vec<Stmt>,
+        super_class: &Option<Expr>,
     ) {
         let enclosing_class = self.current_class;
         self.current_class = ClassType::Class;
 
-        self.declare(name);
-        self.define(name);
+        self.declare(class_name);
+        self.define(class_name);
+
+        if let Some(super_class) = super_class {
+            // Edge case when superclass and subclass have the same name o.o'
+            if let Expr::Variable {
+                name: super_class_name,
+                ..
+            } = super_class
+            {
+                if class_name.lexeme == super_class_name.lexeme {
+                    RuntimeError {
+                        token: super_class_name.clone(),
+                        message: "A class can't inherit from itself.".into(),
+                    }
+                    .error();
+                }
+            }
+
+            self.resolve_expr(super_class);
+        }
 
         self.begin_scope();
         self.peek_scopes()
-            .insert("this".into(), State::new(true, true, name.clone()));
+            .insert("this".into(), State::new(true, true, class_name.clone()));
 
         for getter in getters {
             self.resolve_method(getter);
@@ -357,7 +377,8 @@ impl stmt::Visitor<()> for Resolver<'_> {
                 name,
                 methods,
                 static_methods,
-            } => self.visit_class_stmt(getters, name, methods, static_methods),
+                super_class,
+            } => self.visit_class_stmt(getters, name, methods, static_methods, super_class),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => self.visit_block_stmt(statements),
             Stmt::If {

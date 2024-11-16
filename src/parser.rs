@@ -58,6 +58,13 @@ impl Parser {
 
     fn class_declaration(&mut self) -> Result<Stmt> {
         let name = self.consume(TokenType::Identifier, "Expected a class name.")?;
+
+        let mut super_class = None;
+        if self.match_token(&[TokenType::Less]) {
+            let name = self.consume(TokenType::Identifier, "Expected super class name.")?;
+            super_class = Some(Expr::Variable { uid: new_uid(), name });
+        }
+
         self.consume(TokenType::LeftBrace, "Expected '{' before class body.")?;
 
         let mut getters = vec![];
@@ -83,6 +90,7 @@ impl Parser {
             name,
             methods,
             static_methods,
+            super_class,
         })
     }
 

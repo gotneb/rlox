@@ -99,13 +99,37 @@ impl Interpreter {
         Ok(())
     }
 
+    fn evaluate_super_class(
+        &mut self,
+        class_name: &Token,
+        super_class_expr: &Expr,
+    ) -> Result<Class> {
+        let evaluated = self.evaluate(super_class_expr)?;
+        match evaluated {
+            Value::Class(class) => Ok(class),
+            _ => Exception::runtime_error(
+                class_name.clone(),
+                String::from("Superclass must be a class"),
+            ),
+        }
+    }
+
     fn visit_class_stmt(
         &mut self,
         name: &Token,
         getters: &Vec<Stmt>,
         methods: &Vec<Stmt>,
         static_methods: &Vec<Stmt>,
+        super_class: &Option<Expr>,
     ) -> Result<()> {
+        let super_class = match super_class {
+            Some(expr) => {
+                let class = self.evaluate_super_class(name, expr)?;
+                Some(Box::new(class))
+            }
+            None => None,
+        };
+
         self.env
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
@@ -150,7 +174,9 @@ impl Interpreter {
             name.lexeme.clone(),
             class_methods,
             class_static_methods,
+            super_class,
         );
+
         self.env.borrow_mut().assign(name, Value::Class(class))?;
 
         Ok(())
@@ -477,7 +503,8 @@ impl stmt::Visitor<Result<()>> for Interpreter {
                 name,
                 methods,
                 static_methods,
-            } => self.visit_class_stmt(name, getters, methods, static_methods),
+                super_class,
+            } => self.visit_class_stmt(name, getters, methods, static_methods, super_class),
             Stmt::Var { name, initializer } => self.visit_var_stmt(name, initializer),
             Stmt::Block { statements } => {
                 self.execute_block(statements, Environment::new_local(&self.env))

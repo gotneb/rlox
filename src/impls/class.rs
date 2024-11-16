@@ -16,6 +16,7 @@ pub struct Class {
     name: String,
     methods: HashMap<String, Function>,
     static_methods: HashMap<String, Function>,
+    super_class: Option<Box<Class>>,
 }
 
 impl Class {
@@ -24,12 +25,14 @@ impl Class {
         name: String,
         methods: HashMap<String, Function>,
         static_methods: HashMap<String, Function>,
+        super_class: Option<Box<Class>>,
     ) -> Class {
         Class {
             getters,
             name,
             methods,
             static_methods,
+            super_class,
         }
     }
 
