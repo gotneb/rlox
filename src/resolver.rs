@@ -19,9 +19,10 @@ enum FunctionType {
     Initializer,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum ClassType {
     None,
+    Subclass,
     Class,
 }
 
@@ -207,6 +208,7 @@ impl Resolver<'_> {
         self.define(name);
 
         if let Some(super_class) = super_class {
+            self.current_class = ClassType::Subclass;
             self.resolve_super_class(name, super_class);
 
             self.begin_scope();
@@ -346,6 +348,24 @@ impl Resolver<'_> {
     }
 
     fn visit_super_expr(&mut self, expr: &Expr, keyword: &Token) {
+        match self.current_class {
+            ClassType::None => {
+                return RuntimeError {
+                    message: "Can't use 'super' outside a class.".into(),
+                    token: keyword.clone(),
+                }
+                .error()
+            }
+            ClassType::Class => {
+                return RuntimeError {
+                    message: "Can't use 'super' in a class with no superclass.".into(),
+                    token: keyword.clone(),
+                }
+                .error();
+            }
+            ClassType::Subclass => (),
+        }
+
         self.resolve_local(expr, keyword);
     }
 
