@@ -56,7 +56,13 @@ impl Class {
     }
 
     pub fn find_method(&self, name: &String) -> Option<Value> {
-        self.methods.get(name).map(|f| Value::Function(f.clone()))
+        self.methods
+            .get(name)
+            .map(|f| Value::Function(f.clone()))
+            .or(self
+                .super_class
+                .as_ref()
+                .and_then(|super_class| super_class.find_method(name)))
     }
 }
 
