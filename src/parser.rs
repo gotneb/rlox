@@ -530,6 +530,13 @@ impl Parser {
             });
         }
 
+        if self.match_token(&[TokenType::Super]) {
+            let keyword = self.previous();
+            self.consume(TokenType::Dot, "Expected '.' after 'super'.")?;
+            let method = self.consume(TokenType::Identifier, "Expect superclass method name.")?;
+            return Ok(Expr::Super { uid: new_uid(), keyword, method });
+        }
+
         if self.match_token(&[TokenType::Identifier]) {
             return Ok(Expr::Variable {
                 uid: new_uid(),

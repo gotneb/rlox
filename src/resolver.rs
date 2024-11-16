@@ -167,6 +167,25 @@ impl Resolver<'_> {
         }
     }
 
+    fn resolve_super_class(&mut self, class_name: &Token, super_class_expr: &Expr) {
+        match super_class_expr {
+            Expr::Variable {
+                name: super_class_name,
+                ..
+            } => {
+                if class_name.lexeme == super_class_name.lexeme {
+                    RuntimeError {
+                        token: super_class_name.clone(),
+                        message: "A class can't inherit from itself.".to_string(),
+                    }
+                    .error()
+                }
+                self.resolve_expr(super_class_expr);
+            }
+            _ => panic!("super_class is not an expression!"),
+        }
+    }
+
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) {
         self.begin_scope();
         self.resolve_block(statements);
@@ -176,7 +195,7 @@ impl Resolver<'_> {
     fn visit_class_stmt(
         &mut self,
         getters: &Vec<Stmt>,
-        class_name: &Token,
+        name: &Token,
         methods: &Vec<Stmt>,
         static_methods: &Vec<Stmt>,
         super_class: &Option<Expr>,
@@ -184,31 +203,20 @@ impl Resolver<'_> {
         let enclosing_class = self.current_class;
         self.current_class = ClassType::Class;
 
-        self.declare(class_name);
-        self.define(class_name);
+        self.declare(name);
+        self.define(name);
 
         if let Some(super_class) = super_class {
-            // Edge case when superclass and subclass have the same name o.o'
-            if let Expr::Variable {
-                name: super_class_name,
-                ..
-            } = super_class
-            {
-                if class_name.lexeme == super_class_name.lexeme {
-                    RuntimeError {
-                        token: super_class_name.clone(),
-                        message: "A class can't inherit from itself.".into(),
-                    }
-                    .error();
-                }
-            }
+            self.resolve_super_class(name, super_class);
 
-            self.resolve_expr(super_class);
+            self.begin_scope();
+            self.peek_scopes()
+                .insert("super".into(), State::new(true, true, name.clone()));
         }
 
         self.begin_scope();
         self.peek_scopes()
-            .insert("this".into(), State::new(true, true, class_name.clone()));
+            .insert("this".into(), State::new(true, true, name.clone()));
 
         for getter in getters {
             self.resolve_method(getter);
@@ -223,6 +231,11 @@ impl Resolver<'_> {
         }
 
         self.end_scope();
+
+        if super_class.is_some() {
+            self.end_scope();
+        }
+
         self.current_class = enclosing_class;
     }
 
@@ -332,6 +345,10 @@ impl Resolver<'_> {
         self.resolve_expr(object);
     }
 
+    fn visit_super_expr(&mut self, expr: &Expr, keyword: &Token) {
+        self.resolve_local(expr, keyword);
+    }
+
     fn visit_this_expr(&mut self, expr: &Expr, keyword: &Token) {
         if let ClassType::None = self.current_class {
             return RuntimeError {
@@ -413,6 +430,7 @@ impl expr::Visitor<()> for Resolver<'_> {
             Expr::Get { object, .. } => self.visit_get_expr(object),
             Expr::Set { object, value, .. } => self.visit_set_expr(value, object),
             Expr::This { name, .. } => self.visit_this_expr(expression, name),
+            Expr::Super { keyword, .. } => self.visit_super_expr(expression, keyword),
         }
     }
 }

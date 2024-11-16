@@ -134,6 +134,14 @@ impl Interpreter {
             .borrow_mut()
             .define(name.lexeme.clone(), Value::Nil);
 
+        let prev_env = self.env.clone();
+        if let Some(super_class) = &super_class {
+            self.env = Environment::new_local(&self.env);
+            self.env
+                .borrow_mut()
+                .define("super".into(), Value::Class(*super_class.clone()));
+        }
+
         let mut class_getters = HashMap::new();
         let mut class_methods = HashMap::new();
         let mut class_static_methods = HashMap::new();
@@ -174,8 +182,12 @@ impl Interpreter {
             name.lexeme.clone(),
             class_methods,
             class_static_methods,
-            super_class,
+            super_class.clone(),
         );
+
+        if super_class.is_some() {
+            self.env = prev_env;
+        }
 
         self.env.borrow_mut().assign(name, Value::Class(class))?;
 
@@ -440,6 +452,46 @@ impl Interpreter {
         }
     }
 
+    fn visit_super_expr(&mut self, expr: &Expr, method: &Token) -> Result<Value> {
+        let distance = self
+            .locals
+            .get(expr)
+            .expect("Super class haven't been resolved");
+
+        let super_class = self
+            .env
+            .borrow()
+            .get_at(*distance, &"super".into())?;
+        
+        let super_class = match super_class {
+            Value::Class(super_class) => super_class,
+            _ => panic!("Expecteded superclass to be a class!"),
+        };
+
+        let object = self
+            .env
+            .borrow()
+            // "this" is always right inside where "super" is stored
+            .get_at(*distance - 1, &"this".into())?;
+        let object = match object {
+            Value::ClassInstance(instance) => instance,
+            _ => panic!("Expecteded 'this' to be a class instance!"),
+        };
+
+        let method = super_class.find_method(&method.lexeme).ok_or_else(|| {
+            Exception::runtime_error::<()>(
+                method.clone(),
+                format!("Undefined property {}.", method.lexeme),
+            )
+            .unwrap_err()
+        })?;
+
+        match method {
+            Value::Function(method) => Ok(Value::Function(method.bind(object))),
+            _ => panic!("Expected method to be a function!"),
+        }
+    }
+
     fn visit_this_expr(&mut self, keyword: &Token, expr: &Expr) -> Result<Value> {
         self.loopkup_variable(keyword, expr)
     }
@@ -557,6 +609,7 @@ impl expr::Visitor<Result<Value>> for Interpreter {
                 ..
             } => self.visit_set_expr(name, object, value),
             Expr::This { name, .. } => self.visit_this_expr(name, expr),
+            Expr::Super { method, .. } => self.visit_super_expr(expr, method),
         }
     }
 }
